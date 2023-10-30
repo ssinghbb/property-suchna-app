@@ -1,5 +1,6 @@
 'use strict';
 
+require('dotenv').config(); // Load environment variables from .env file
 var express = require('express'),
   app = express(),
   port = process.env.PORT || 3000,
@@ -17,7 +18,7 @@ const option = {
 };
 
 const mongoURI = process.env.MONGODB_URI;
-mongoose.connect('mongodb+srv://vikash:root@cluster0.mkrpnfn.mongodb.net/reactnativedb?retryWrites=true&w=majority').then(function(){
+mongoose.connect(mongoURI).then(function(){
     console.log("DB connected successfully")
 }, function(err) {
     console.log("DB not connected:", err);

@@ -8,4 +8,6 @@ module.exports = function(app) {
         .post(userHandlers.register);
    app.route('/auth/sign_in')
         .post(userHandlers.sign_in);
+   app.route('/verify')
+        .get(userHandlers.verify); 
 };
