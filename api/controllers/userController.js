@@ -54,6 +54,7 @@ var mongoose = require('mongoose'),
 // };
 
 exports.register = function(req, res) {
+  console.log(req.body,'req.body');
   var newUser = new User(req.body);
   newUser.password = req.body.password;
   newUser.confirmPassword = req.body.confirmPassword;
@@ -87,7 +88,11 @@ exports.register = function(req, res) {
           }
           user.password = undefined;
           user.confirmPassword = undefined;
-          return res.json(user._id);
+          // return res.json({user._id});
+           return res.json({success:true,message:'User Registered Successfully',data:{
+              user
+           }}); 
+
         })
         .catch(err => {
           let errorMessage = "An error occurred while creating the user.";
