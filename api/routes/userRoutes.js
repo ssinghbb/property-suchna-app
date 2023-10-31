@@ -10,4 +10,6 @@ module.exports = function(app) {
         .post(userHandlers.sign_in);
    app.route('/verify')
         .get(userHandlers.verify); 
+        app.route('/testapi')
+        .get(userHandlers.testapi);
 };
