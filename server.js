@@ -1,10 +1,10 @@
 'use strict';
-var cors = require('cors')
-var fileUpload=require('express-fileupload')
-var express = require('express'),
 
+require('dotenv').config(); // Load environment variables from .env file
+var express = require('express'),
   app = express(),
   port = process.env.PORT || 3000,
+
 
   User = require('./api/models/userModel'),
   bodyParser = require('body-parser'),
@@ -18,21 +18,15 @@ const option = {
 };
 
 const mongoURI = process.env.MONGODB_URI;
-
-const url='mongodb+srv://vikash:root@cluster0.mkrpnfn.mongodb.net/reactnativedb?retryWrites=true&w=majority'
-
-const localUrl='mongodb://127.0.0.1:27017/Property-Suchana';
-
-mongoose.connect(localUrl).then(function(){
+mongoose.connect(mongoURI).then(function(){
     console.log("DB connected successfully")
 }, function(err) {
     console.log("DB not connected:", err);
 });
 
-app.use(fileUpload())
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-app.use(cors());
+
 app.use(function(req, res, next) {
   if (req.headers && req.headers.authorization && req.headers.authorization.split(' ')[0] === 'JWT') {
     jsonwebtoken.verify(req.headers.authorization.split(' ')[1], 'RESTFULAPIs', function(err, decode) {
@@ -45,13 +39,8 @@ app.use(function(req, res, next) {
     next();
   }
 });
-var userRoutes = require('./api/routes/userRoutes');
-var postRoutes = require('./api/routes/postRoutes');
-
-userRoutes(app);
-postRoutes(app);
-
-
+var routes = require('./api/routes/userRoutes');
+routes(app);
 
 app.use(function(req, res) {
   res.status(404).send({ url: req.originalUrl + ' not found' })
@@ -59,6 +48,6 @@ app.use(function(req, res) {
 
 app.listen(port);
 
-console.log('RESTful API server started on: ' + port);
+console.log(' RESTful API server started on: ' + port);
 
 module.exports = app;
