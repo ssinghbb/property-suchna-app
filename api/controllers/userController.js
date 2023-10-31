@@ -169,6 +169,10 @@ exports.verify = function(req, res) {
     });
 };
 
+exports.testapi = function(req, res) {
+ return res.status(200).json({message:"Server is running...."});
+};
+
 
 
 
