@@ -6,10 +6,10 @@ var mongoose = require('mongoose'),
   bcrypt = require('bcrypt'),
   User = mongoose.model('User');
 
-  const client = require("twilio")(
-    process.env.ACCOUNT_SID,
-    process.env.AUTH_TOKEN
-  );
+const client = require("twilio")(
+  process.env.ACCOUNT_SID,
+  process.env.AUTH_TOKEN
+);
 
 // exports.register = function(req, res) {
 //   var newUser = new User(req.body);
@@ -59,11 +59,12 @@ var mongoose = require('mongoose'),
 //     });
 // };
 
-exports.register = function(req, res) {
+exports.register = function (req, res) {
   var newUser = new User(req.body);
   newUser.password = req.body.password;
   newUser.confirmPassword = req.body.confirmPassword;
-console.log("L66 this is phone number:", req.body.phoneNumber);
+  console.log("L66 this is phone number:", req.body);
+  console.log("L66 this is phone number:", req.body.phoneNumber);
   // Check if password and confirmPassword match
   if (req.body.password !== req.body.confirmPassword) {
     return res.status(400).json({ message: "Password and confirm password do not match." });
@@ -122,7 +123,7 @@ console.log("L66 this is phone number:", req.body.phoneNumber);
 };
 
 //Verify the user mobile number via OTP
-exports.verify = function(req, res) {
+exports.verify = function (req, res) {
   const phoneNumber = req.body.phonenumber;
   console.log("🚀 ~ file: userController.js:127 ~ phoneNumber:", phoneNumber)
   const code = req.body.code;
@@ -143,7 +144,7 @@ exports.verify = function(req, res) {
     .then((data) => {
       console.log("🚀 ~ file: userController.js:144 ~ .then ~ data:", data)
       if (data.valid == false) {
-        return res.status(400).json({message: "Entered wrong otp..."})
+        return res.status(400).json({ message: "Entered wrong otp..." })
       }
       // Handle different verification statuses
       if (data.status === 'approved') {
@@ -169,14 +170,14 @@ exports.verify = function(req, res) {
     });
 };
 
-exports.testapi = function(req, res) {
- return res.status(200).json({message:"Server is running...."});
+exports.testapi = function (req, res) {
+  return res.status(200).json({ message: "Server is running...." });
 };
 
 
 
 
-exports.sign_in = function(req, res) {
+exports.sign_in = function (req, res) {
   console.log("🚀 ~ file: userController.js:59 ~ req:", req.body)
   User.findOne({ phoneNumber: req.body.phoneNumber })
     .then(user => {
@@ -199,7 +200,7 @@ exports.sign_in = function(req, res) {
   //console.log("🚀 ~ file: userController.js:78 ~ phoneNumber:", phoneNumber)
 };
 
-exports.loginRequired = function(req, res, next) {
+exports.loginRequired = function (req, res, next) {
   if (req.user) {
     next();
   } else {
@@ -207,12 +208,12 @@ exports.loginRequired = function(req, res, next) {
     return res.status(401).json({ message: 'Unauthorized user!!' });
   }
 };
-exports.profile = function(req, res, next) {
+exports.profile = function (req, res, next) {
   if (req.user) {
     res.send(req.user);
     next();
-  } 
+  }
   else {
-   return res.status(401).json({ message: 'Invalid token' });
+    return res.status(401).json({ message: 'Invalid token' });
   }
 };
