@@ -14,16 +14,11 @@ var postSchema = new Schema({
         required:true
     },
     likes:[{
-        type:String
+        type:ObjectId,
     }],
-    // comments:[{
-    //     text:String,
-    //     postedBy:{type:ObjectId}
-    // }],
     postedBy:{
-       type:String,
+       type:ObjectId,
        required:true,
-       ref: 'User',
     },
     postedDate: {
         type: Date,
