@@ -78,6 +78,7 @@ exports.register = function (req, res) {
   User.findOne({ phoneNumber: req.body.phoneNumber })
     .then(existingUser => {
       if (existingUser) {
+        console.log("existingUser:", existingUser)
         return res.status(400).json({ message: "User with this phone number already exists." });
       }
 
@@ -87,6 +88,7 @@ exports.register = function (req, res) {
 
       newUser.save()
         .then(user => {
+          console.log("user:", user)
           if (!user) {
             return res.status(400).send({
               message: "User registration failed. Please try again."
@@ -102,15 +104,18 @@ exports.register = function (req, res) {
               channel: 'sms' // You can specify the channel here, either 'sms' or 'call'
             })
             .then((data) => {
+              console.log("data:", data)
               user.password = undefined;
               user.confirmPassword = undefined;
               return res.json(user._id);
             })
             .catch((err) => {
+              console.log("err:", err)
               return res.status(500).json({ message: "Twilio verification failed. Please try again." });
             });
         })
         .catch(err => {
+          console.log("err:", err)
           let errorMessage = "An error occurred while creating the user.";
           return res.status(400).send({
             message: errorMessage
@@ -118,6 +123,7 @@ exports.register = function (req, res) {
         });
     })
     .catch(err => {
+      console.log("err:", err)
       return res.status(500).send({ message: "Internal Server Error" });
     });
 };
