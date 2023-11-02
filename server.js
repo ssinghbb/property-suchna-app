@@ -18,12 +18,7 @@ const option = {
 };
 
 const mongoURI = process.env.MONGODB_URI;
-
-const url='mongodb+srv://vikash:root@cluster0.mkrpnfn.mongodb.net/reactnativedb?retryWrites=true&w=majority'
-
-const localUrl='mongodb://127.0.0.1:27017/Property-Suchana';
-
-mongoose.connect(localUrl).then(function(){
+mongoose.connect(mongoURI).then(function(){
     console.log("DB connected successfully")
 }, function(err) {
     console.log("DB not connected:", err);
