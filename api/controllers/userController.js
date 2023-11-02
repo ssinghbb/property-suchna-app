@@ -58,6 +58,8 @@ const client = require("twilio")(
 //       return res.status(500).send({ message: "Internal Server Error" });
 //     });
 // };
+
+//send otp
 exports.sendOtp = function (req, res) {
   console.log("otp route")
   if (!req.body.phoneNumber) {
@@ -87,6 +89,95 @@ exports.sendOtp = function (req, res) {
   }
 }
 
+//Verify the user mobile number via OTP
+exports.verify = function (req, res) {
+  console.log("verify route")
+  const phoneNumber = req.body.phoneNumber;
+  console.log("🚀 ~ file: userController.js:127 ~ phoneNumber:", phoneNumber)
+  const code = req.body.code;
+  console.log("🚀 ~ file: userController.js:129 ~ code:", code)
+
+  // Check if the OTP is not exactly 6 digits
+  if (code.length !== 6) {
+    return res.status(400).json({ message: 'Invalid OTP. OTP must be 6 digits.' });
+  }
+
+  client
+    .verify.v2.services(process.env.SERVICE_ID)
+    .verificationChecks
+    .create({
+      to: `+${phoneNumber}`,
+      code: code
+    })
+    .then((data) => {
+      console.log("🚀 ~ file: userController.js:144 ~ .then ~ data:", data)
+      if (data.valid == false) {
+        return res.status(400).json({ message: "Entered wrong otp..." })
+      }
+      // Handle different verification statuses
+      if (data.status === 'approved') {
+        var newUser = new User(req.body);
+        User.findOne({ phoneNumber: req.body.phoneNumber })
+          .then(existingUser => {
+            if (existingUser) {
+              console.log("existingUser:", existingUser)
+              return res.status(400).json({ message: "User with this phone number already exists." });
+            }
+
+            // Hash the password and confirmPassword before saving
+            newUser.hash_password = bcrypt.hashSync(req.body.password, 10);
+            newUser.confirmPassword = bcrypt.hashSync(req.body.confirmPassword, 10);
+
+            newUser.save()
+              .then(user => {
+                console.log("user:", user)
+                if (!user) {
+                  return res.status(400).send({
+                    message: "User registration failed. Please try again."
+                  });
+                }
+                return res.status(200).send({ data: 'user registered' })
+
+
+                // Twilio verification code after the user is successfully saved
+
+              })
+              .catch(err => {
+                console.log("err:", err)
+                let errorMessage = "An error occurred while creating the user.";
+                return res.status(400).send({
+                  message: errorMessage
+                });
+              });
+          })
+          .catch(err => {
+            console.log("err:", err)
+            return res.status(500).send({ message: "Internal Server Error" });
+          });
+
+
+      } else if (data.status === 'pending') {
+        return res.status(400).json({ message: 'Verification pending. Please try again.' });
+      } else if (data.status === 'canceled') {
+        return res.status(400).json({ message: 'Verification canceled. Please request a new code.' });
+      } else if (data.status === 'failed') {
+        return res.status(400).json({ message: 'Verification failed. Please try again.' });
+      } else {
+        return res.status(400).json({ message: 'Invalid OTP. Please try again.' });
+      }
+    })
+    .catch((error) => {
+      console.error("Error occurred during verification:", error);
+      if (error.code === 20404) {
+        return res.status(404).json({ message: 'Verification service not found. Please contact support.' });
+      } else if (error.code === 60202) {
+        return res.status(429).json({ message: 'Too many attempts. Please try again later.' });
+      }
+      return res.status(500).json({ message: 'Error occurred during verification. Please try again.' });
+    });
+};
+
+//user register
 exports.register = function (req, res) {
   var newUser = new User(req.body);
   newUser.password = req.body.password;
@@ -140,53 +231,7 @@ exports.register = function (req, res) {
     });
 };
 
-//Verify the user mobile number via OTP
-exports.verify = function (req, res) {
-  const phoneNumber = req.body.phonenumber;
-  console.log("🚀 ~ file: userController.js:127 ~ phoneNumber:", phoneNumber)
-  const code = req.body.code;
-  console.log("🚀 ~ file: userController.js:129 ~ code:", code)
 
-  // Check if the OTP is not exactly 6 digits
-  if (code.length !== 6) {
-    return res.status(400).json({ message: 'Invalid OTP. OTP must be 6 digits.' });
-  }
-
-  client
-    .verify.v2.services(process.env.SERVICE_ID)
-    .verificationChecks
-    .create({
-      to: `+${phoneNumber}`,
-      code: code
-    })
-    .then((data) => {
-      console.log("🚀 ~ file: userController.js:144 ~ .then ~ data:", data)
-      if (data.valid == false) {
-        return res.status(400).json({ message: "Entered wrong otp..." })
-      }
-      // Handle different verification statuses
-      if (data.status === 'approved') {
-        return res.status(200).json({ message: 'Verification successful.' });
-      } else if (data.status === 'pending') {
-        return res.status(400).json({ message: 'Verification pending. Please try again.' });
-      } else if (data.status === 'canceled') {
-        return res.status(400).json({ message: 'Verification canceled. Please request a new code.' });
-      } else if (data.status === 'failed') {
-        return res.status(400).json({ message: 'Verification failed. Please try again.' });
-      } else {
-        return res.status(400).json({ message: 'Invalid OTP. Please try again.' });
-      }
-    })
-    .catch((error) => {
-      console.error("Error occurred during verification:", error);
-      if (error.code === 20404) {
-        return res.status(404).json({ message: 'Verification service not found. Please contact support.' });
-      } else if (error.code === 60202) {
-        return res.status(429).json({ message: 'Too many attempts. Please try again later.' });
-      }
-      return res.status(500).json({ message: 'Error occurred during verification. Please try again.' });
-    });
-};
 
 exports.testapi = function (req, res) {
   return res.status(200).json({ message: "Server is running...." });

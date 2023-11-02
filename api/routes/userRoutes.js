@@ -11,7 +11,7 @@ module.exports = function (app) {
     app.route('/auth/sign_in')
         .post(userHandlers.sign_in);
     app.route('/verify')
-        .get(userHandlers.verify);
+        .post(userHandlers.verify);
     app.route('/testapi')
         .get(userHandlers.testapi);
 };
