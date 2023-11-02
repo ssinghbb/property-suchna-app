@@ -1,7 +1,9 @@
 'use strict';
 var cors = require('cors')
 var fileUpload=require('express-fileupload')
+require('dotenv').config();
 var express = require('express'),
+
 
   app = express(),
   port = process.env.PORT || 3000,

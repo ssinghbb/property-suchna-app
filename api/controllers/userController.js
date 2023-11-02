@@ -58,6 +58,34 @@ const client = require("twilio")(
 //       return res.status(500).send({ message: "Internal Server Error" });
 //     });
 // };
+exports.sendOtp = function (req, res) {
+  console.log("otp route")
+  if (!req.body.phoneNumber) {
+    return res.status(400).json({ message: "Phone number is required." });
+  }
+  try {
+
+    client
+      .verify.v2.services(process.env.SERVICE_ID)
+      .verifications
+      .create({
+        to: `+${req.body.phoneNumber}`,
+        channel: 'sms' // You can specify the channel here, either 'sms' or 'call'
+      })
+      .then((data) => {
+        console.log("data:", data)
+        return res.json({ data: 'Otp send successfull' });
+      })
+      .catch((err) => {
+        console.log("err:", err)
+        return res.status(500).json({ message: "Twilio verification failed. Please try again." });
+      });
+  } catch (error) {
+    console.log("error:", error)
+    return res.status(500).json({ error: error })
+
+  }
+}
 
 exports.register = function (req, res) {
   var newUser = new User(req.body);
@@ -96,23 +124,7 @@ exports.register = function (req, res) {
           }
 
           // Twilio verification code after the user is successfully saved
-          client
-            .verify.v2.services(process.env.SERVICE_ID)
-            .verifications
-            .create({
-              to: `+${req.body.phoneNumber}`,
-              channel: 'sms' // You can specify the channel here, either 'sms' or 'call'
-            })
-            .then((data) => {
-              console.log("data:", data)
-              user.password = undefined;
-              user.confirmPassword = undefined;
-              return res.json(user._id);
-            })
-            .catch((err) => {
-              console.log("err:", err)
-              return res.status(500).json({ message: "Twilio verification failed. Please try again." });
-            });
+
         })
         .catch(err => {
           console.log("err:", err)
