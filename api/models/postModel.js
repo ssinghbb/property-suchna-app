@@ -16,7 +16,7 @@ var postSchema = new Schema({
     likes:[{
         type:ObjectId,
     }],
-    postedBy:{
+    userId:{
        type:ObjectId,
        required:true,
     },
