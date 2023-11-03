@@ -4,8 +4,10 @@ var path = require("path");
 var commentSchemaModel = require("../models/commentModel");
 
 exports.upload = async function (req, res) {
-  console.log("req", req?.body);
+  console.log("reqyyy", req.body);
+  console.log("reqyyy files", req.files);
   const { userId, caption = "", userName, location, description } = req.body;
+  console.log("requserId", req?.body?.userId);
   try {
     if (!userId) {
       return res
@@ -22,7 +24,7 @@ exports.upload = async function (req, res) {
         .status(400)
         .json({ sucess: false, massage: "userName is requred....." });
     }
-    
+
     const uploadedFile = req?.files?.file;
     var uploadedPath = path.join(__dirname, "../../post", uploadedFile.name);
 
@@ -38,12 +40,12 @@ exports.upload = async function (req, res) {
     });
     const data = {
       caption,
-      postedBy: userId,
+      userId: userId,
       url: uploadedPath,
       userName: userName,
       location: location,
       description: description,
-      likes:[],
+      likes: [],
     };
     const addPost = await postSchemaModel.create(data);
     console.log("data", addPost);
@@ -63,8 +65,6 @@ exports.upload = async function (req, res) {
       .json({ sucess: false, massage: "server error", data: error });
   }
 };
-
-
 
 exports.likePost = async function (req, res) {
   const { userId, postId } = req.body;
@@ -117,8 +117,4 @@ exports.likePost = async function (req, res) {
       .json({ sucess: false, message: "sever error", error });
   }
 };
-
-
-
-
 
