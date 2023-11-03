@@ -3,6 +3,7 @@ var postSchemaModel = require("../models/postModel");
 var path = require("path");
 var commentSchemaModel = require("../models/commentModel");
 
+
 exports.upload = async function (req, res) {
   console.log("reqyyy", req.body);
   console.log("reqyyy files", req.files);
@@ -25,23 +26,26 @@ exports.upload = async function (req, res) {
         .json({ sucess: false, massage: "userName is requred....." });
     }
 
-    const uploadedFile = req?.files?.file;
-    var uploadedPath = path.join(__dirname, "../../post", uploadedFile.name);
+    // const uploadedFile = req?.files?.file.data;
 
-    uploadedFile.mv(uploadedPath, (err) => {
-      if (err) {
-        return res
-          .status(400)
-          .json({ sucess: false, massage: "Error uploading file" });
-      }
-      return res
-        .status(200)
-        .json({ sucess: true, message: "file uploaded sucessfully" });
-    });
+    const uploadedFile = req?.files?.file.data;
+    console.log("buffer data", uploadedFile);
+    // // var uploadedPath = path.join(__dirname, "../../post", uploadedFile.name);
+
+    // uploadedFile.mv(uploadedPath, (err) => {
+    //   if (err) {
+    //     return res
+    //       .status(400)
+    //       .json({ sucess: false, massage: "Error uploading file" });
+    //   }
+    //   return res
+    //     .status(200)
+    //     .json({ sucess: true, message: "file uploaded sucessfully" });
+    // });
     const data = {
       caption,
       userId: userId,
-      url: uploadedPath,
+      url: uploadedFile,
       userName: userName,
       location: location,
       description: description,
@@ -118,6 +122,9 @@ exports.likePost = async function (req, res) {
   }
 };
 
+exports.getAllPost = async function (req, res) {
+  let results = await postSchemaModel.find({}).exec();
+  console.log("res", results);
 
-
-
+  res.status(200).json({ data: results });
+};
