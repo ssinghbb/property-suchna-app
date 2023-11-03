@@ -45,7 +45,7 @@ exports.upload = async function (req, res) {
     const data = {
       caption,
       userId: userId,
-      url: uploadedFile,
+      url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Sunflower_from_Silesia2.jpg/800px-Sunflower_from_Silesia2.jpg',
       userName: userName,
       location: location,
       description: description,
