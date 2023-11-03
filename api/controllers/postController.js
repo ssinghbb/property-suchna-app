@@ -3,13 +3,14 @@ var mongoose = require("mongoose");
 var postSchemaModel = require("../models/postModel");
 var path = require("path");
 var commentSchemaModel = require("../models/commentModel");
-
+var userModel = require('../models/userModel')
 
 exports.upload = async function (req, res) {
   console.log("reqyyy", req.body);
   console.log("reqyyy files", req.files);
   const { userId, caption = "", userName, location, description } = req.body;
   console.log("requserId", req?.body?.userId);
+
   try {
     if (!userId) {
       return res
@@ -43,14 +44,18 @@ exports.upload = async function (req, res) {
     //     .status(200)
     //     .json({ sucess: true, message: "file uploaded sucessfully" });
     // });
+    const getUserData = await userModel.findOne({ _id: userId }).exec()
+    console.log("getUserData:", getUserData)
+
     const data = {
       caption,
       userId: userId,
-      url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Sunflower_from_Silesia2.jpg/800px-Sunflower_from_Silesia2.jpg',
+      url: 'https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg',
       userName: userName,
       location: location,
       description: description,
       likes: [],
+      user: getUserData
     };
     const addPost = await postSchemaModel.create(data);
     console.log("data", addPost);
@@ -125,7 +130,7 @@ exports.likePost = async function (req, res) {
 
 exports.getAllPost = async function (req, res) {
   let results = await postSchemaModel.find({}).exec();
-  console.log("res", results);
+  // console.log("res", results);
 
   res.status(200).json({ data: results });
 };
