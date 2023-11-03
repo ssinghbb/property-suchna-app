@@ -62,6 +62,7 @@ const client = require("twilio")(
 //send otp
 exports.sendOtp = function (req, res) {
   console.log("otp route")
+  console.log("req.body.phoneNumber:", req.body.phoneNumber)
   if (!req.body.phoneNumber) {
     return res.status(400).json({ message: "Phone number is required." });
   }
