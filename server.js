@@ -42,6 +42,7 @@ app.use(function(req, res, next) {
     next();
   }
 });
+app.use(express.static("post"))
 var userRoutes = require('./api/routes/userRoutes');
 var postRoutes = require('./api/routes/postRoutes');
 
