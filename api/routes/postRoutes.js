@@ -5,6 +5,7 @@ const multer = require("multer");
 const storage=multer.memoryStorage()
 const upload=multer({storage:storage})
 module.exports = function (app) {
+ 
   app.route("/post/upload").post(postController.upload);
   app.route("/post/like").put(postController.likePost);
   app.route("/post/allpost").get(postController.getAllPost);
