@@ -48,6 +48,7 @@ exports.upload = async function (req, res) {
     var currentDate = new Date();
 
     // Format the date as YYYY-MM-DD_HH-mm-ss
+
     var formattedDate = currentDate
       .toISOString()
       .replace(/[:T\-Z]/g, "")
@@ -66,7 +67,7 @@ exports.upload = async function (req, res) {
         .json({ sucess: true, message: "file uploaded sucessfully" });
     });
 
-    const { fullName, _id } = userDetails;
+    //const { fullName, _id } = userDetails;
 
     const data = {
       caption,
@@ -77,7 +78,7 @@ exports.upload = async function (req, res) {
       location: location,
       description: description,
       likes: [],
-      user: getUserData
+      user: userDetails,
     };
     const addPost = await postSchemaModel.create(data);
     console.log("data", addPost);
@@ -97,11 +98,6 @@ exports.upload = async function (req, res) {
       .json({ sucess: false, massage: "server error", data: error });
   }
 };
-
-
-
-
-
 
 exports.likePost = async function (req, res) {
   const { userId, postId } = req.body;
@@ -155,16 +151,32 @@ exports.likePost = async function (req, res) {
   }
 };
 
+// exports.getAllPost = async function (req, res) {
+//   console.log("req", req);
+//   let results = await postSchemaModel.find();
+//   console.log("res", results);
 
+//   res
+//     .status(200)
+//     .json({ sucess: true, message: "post get successfuly", data: results });
+// };
 
 
 
 exports.getAllPost = async function (req, res) {
-  console.log("req",req);
-  let results = await postSchemaModel.find();
-  console.log("res", results);
+  console.log("req", req);
 
-  res.status(200).json({ sucess: true, message: "post get successfuly",data: results });
+  try {
+  
+
+      let results = await postSchemaModel.find();
+      console.log("res", results);
+
+      res
+        .status(200)
+        .json({ sucess: true, message: "post get successfuly", data: results });
+    
+  } catch (error) {
+    res.status(500).json({ sucess: false, message: "server error", error });
+  }
 };
-
-
