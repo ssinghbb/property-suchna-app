@@ -17,7 +17,7 @@ var postSchema = new Schema({
         type:ObjectId,
     }],
     user:{
-       type:Object
+       type:Object,
      },
     userId:{
        type:ObjectId,
