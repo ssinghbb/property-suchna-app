@@ -139,19 +139,7 @@ exports.likePost = async function (req, res) {
 
 exports.getAllPost = async function (req, res) {
   try {
-    const result = await postSchemaModel.aggregate([
-      {
-        $lookup: {
-          from: "users", // The name of the other collection
-          localField: "userId",
-          foreignField: "_id",
-          as: "user",
-        },
-      },
-      {
-        $unwind: "$user", // Unwind the array created by $lookup
-      },
-    ]);
+    const result = (await postSchemaModel.find()).reverse()
 
     
     console.log("resulthdijl", result);
