@@ -26,7 +26,9 @@ mongoose.connect(mongoURI).then(function(){
     console.log("DB not connected:", err);
 });
 
-app.use(fileUpload())
+app.use(fileUpload({
+  useTempFiles:true
+}))
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cors());
@@ -48,6 +50,10 @@ var postRoutes = require('./api/routes/postRoutes');
 
 userRoutes(app);
 postRoutes(app);
+
+console.log("cloudname",process.env.CLOUD_NAME);
+console.log("APIKEY",process.env.API_KEY);
+console.log("SECREAT KEY",process.env.API_SECREAT);
 
 
 
