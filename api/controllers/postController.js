@@ -3,13 +3,15 @@ var postSchemaModel = require("../models/postModel");
 var path = require("path");
 var UserSchema = require("../models/userModel");
 var postSchemaModel = require("../models/postModel");
-const fs = require("fs");
+var cloudinary = require("cloudinary").v2;
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.API_KEY,
+  api_secret: process.env.API_SECREAT,
+});
 
 exports.upload = async function (req, res) {
-  console.log("reqyyy", req.body);
-  console.log("reqyyy files", req.files);
   const { userId, caption = "", userName, location, description } = req.body;
-  console.log("requserId", req?.body?.userId);
 
   try {
     if (!userId) {
@@ -20,8 +22,6 @@ exports.upload = async function (req, res) {
 
     //const userDetails = await UserSchema.findOne({ _id: userId });
     const userDetails = await UserSchema.findById(userId);
-
-    console.log("userdetails", userDetails);
 
     if (!userDetails) {
       return res
@@ -40,40 +40,14 @@ exports.upload = async function (req, res) {
         .json({ sucess: false, massage: "userName is requred....." });
     }
 
-    // const uploadedFile = req?.files?.file.data;
-
     const uploadedFile = req?.files?.file;
-    console.log("buffer data", uploadedFile);
-    // Get the current date and time
-    var currentDate = new Date();
 
-    // Format the date as YYYY-MM-DD_HH-mm-ss
-
-    var formattedDate = currentDate
-      .toISOString()
-      .replace(/[:T\-Z]/g, "")
-      .slice(0, -4);
-    const fileName = formattedDate + "-" + uploadedFile.name;
-    var uploadedPath = path.join(__dirname, "../../post", fileName);
-
-    uploadedFile.mv(uploadedPath, (err) => {
-      if (err) {
-        return res
-          .status(400)
-          .json({ sucess: false, massage: "Error uploading file" });
-      }
-      return res
-        .status(200)
-        .json({ sucess: true, message: "file uploaded sucessfully" });
-    });
-
-    //const { fullName, _id } = userDetails;
+    const result = await cloudinary.uploader.upload(uploadedFile.tempFilePath);
 
     const data = {
       caption,
       userId: userId,
-      url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Sunflower_from_Silesia2.jpg/800px-Sunflower_from_Silesia2.jpg',
-      // url: fileName,
+      url: result.secure_url,
       userName: userName,
       location: location,
       description: description,
@@ -98,6 +72,8 @@ exports.upload = async function (req, res) {
       .json({ sucess: false, massage: "server error", data: error });
   }
 };
+
+
 
 exports.likePost = async function (req, res) {
   const { userId, postId } = req.body;
@@ -161,21 +137,29 @@ exports.likePost = async function (req, res) {
 //     .json({ sucess: true, message: "post get successfuly", data: results });
 // };
 
-
-
 exports.getAllPost = async function (req, res) {
-  console.log("req", req);
-
   try {
-  
+    const result = await postSchemaModel.aggregate([
+      {
+        $lookup: {
+          from: "users", // The name of the other collection
+          localField: "userId",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      {
+        $unwind: "$user", // Unwind the array created by $lookup
+      },
+    ]);
 
-      let results = await postSchemaModel.find();
-      console.log("res", results);
-
-      res
-        .status(200)
-        .json({ sucess: true, message: "post get successfuly", data: results });
     
+    console.log("resulthdijl", result);
+    res.status(200).json({
+      sucess: true,
+      message: "post get successfuly",
+      data: result,
+    });
   } catch (error) {
     res.status(500).json({ sucess: false, message: "server error", error });
   }
