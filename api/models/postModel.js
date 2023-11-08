@@ -11,7 +11,7 @@ var postSchema = new Schema({
     url:{
         type:String,
         trim: true,
-        required:true
+        //required:true
     },
     likes:[{
         type:ObjectId,
@@ -19,6 +19,9 @@ var postSchema = new Schema({
     user:{
        type:Object,
      },
+     type:{
+      type:String,
+    },
     userId:{
        type:ObjectId,
        required:true,
@@ -26,10 +29,7 @@ var postSchema = new Schema({
     postedDate: {
         type: Date,
         default: Date.now
-    },userName: {
-        type: String,
-        required: true,
-      },
+    },
       location: {
         type: String,
       },

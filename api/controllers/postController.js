@@ -36,26 +36,30 @@ exports.upload = async function (req, res) {
         .status(400)
         .json({ sucess: false, massage: " file is requred..." });
     }
-    if (!userName) {
-      return res
-        .status(400)
-        .json({ sucess: false, massage: "userName is requred....." });
-    }
-
     const uploadedFile = req?.files?.file;
+    console.log("uploadedFile",uploadedFile);
 
-    const result = await cloudinary.uploader.upload(uploadedFile.tempFilePath);
+    const isVideo = uploadedFile.mimetype.startsWith("video/");
+
+    console.log("isVideo",isVideo);
+
+    const result = await cloudinary.uploader.upload(uploadedFile.tempFilePath, {
+      resource_type: isVideo ? "video" : "image",
+    });
+
+    console.log("result", result);
 
     const data = {
       caption,
       userId: userId,
       url: result.secure_url,
-      userName: userName,
+      type:isVideo? "reel":"image",
       location: location,
       description: description,
-      likes: [],  
+      likes: [],
       user: userDetails,
     };
+
     const addPost = await postSchemaModel.create(data);
     console.log("data", addPost);
     if (addPost) {
@@ -74,9 +78,6 @@ exports.upload = async function (req, res) {
       .json({ sucess: false, massage: "server error", data: error });
   }
 };
-
-
-
 
 
 
@@ -132,23 +133,9 @@ exports.likePost = async function (req, res) {
   }
 };
 
-
-
-// exports.getAllPost = async function (req, res) {
-//   console.log("req", req);
-//   let results = await postSchemaModel.find();
-//   console.log("res", results);
-
-//   res
-//     .status(200)
-//     .json({ sucess: true, message: "post get successfuly", data: results });
-// };
-
-
-
 exports.getAllPost = async function (req, res) {
   try {
-    const result = (await postSchemaModel.find()).reverse()
+    const result = (await postSchemaModel.find({type:"image"})).reverse();
     console.log("resulthdijl", result);
     res.status(200).json({
       sucess: true,
@@ -159,3 +146,19 @@ exports.getAllPost = async function (req, res) {
     res.status(500).json({ sucess: false, message: "server error", error });
   }
 };
+
+
+exports.getAllReels = async function (req, res) {
+  try {
+    const result = (await postSchemaModel.find({type:"reel"})).reverse();
+    console.log("resulthdijl", result);
+    res.status(200).json({
+      sucess: true,
+      message: "post get successfuly",
+      data: result,
+    });
+  } catch (error) {
+    res.status(500).json({ sucess: false, message: "server error", error });
+  }
+};
+

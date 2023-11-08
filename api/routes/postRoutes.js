@@ -9,6 +9,8 @@ module.exports = function (app) {
   app.route("/post/upload").post(postController.upload);
   app.route("/post/like").put(postController.likePost);
   app.route("/post/allpost").get(postController.getAllPost);
+  app.route("/post/allreel").get(postController.getAllReels);
+
   // app.route("/post/comment").post(postController.addComment);
   // app.route("/post/comments/:postId").get(postController.getComments);
   // app.route("/post/comment/like").put(postController.likeComments);
