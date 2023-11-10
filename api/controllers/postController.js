@@ -80,13 +80,6 @@ exports.upload = async function (req, res) {
 
 
 
-
-
-
-
-
-
-
 exports.likePost = async function (req, res) {
   const { userId, postId } = req.body;
   console.log("bodydata", req.body);
@@ -141,9 +134,6 @@ exports.likePost = async function (req, res) {
   }
 };
 
-
-
-
 exports.getAllPost = async function (req, res) {
   try {
     const result = (await postSchemaModel.find({type:"image"})).reverse();
@@ -159,14 +149,13 @@ exports.getAllPost = async function (req, res) {
 };
 
 
-
 exports.getAllReels = async function (req, res) {
   try {
     const result = (await postSchemaModel.find({type:"reel"})).reverse();
     console.log("resulthdijl", result);
     res.status(200).json({
       sucess: true,
-      message: "reels get successfuly",
+      message: "post get successfuly",
       data: result,
     });
   } catch (error) {
