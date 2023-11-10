@@ -111,7 +111,7 @@ exports.verify = function (req, res) {
       code: code
     })
     .then((data) => {
-      console.log("🚀 ~ file: userController.js:144 ~ .then ~ data:", data)
+      console.log("🚀 ~ file: userControlle.js:144 ~ .then ~ data:", data)
       if (data.valid == false) {
         return res.status(400).json({ message: "Entered wrong otp..." })
       }
