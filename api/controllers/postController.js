@@ -14,7 +14,6 @@ cloudinary.config({
 
 exports.upload = async function (req, res) {
   const { userId, caption = "", userName, location, description } = req.body;
-
   try {
     if (!userId) {
       return res
@@ -81,6 +80,13 @@ exports.upload = async function (req, res) {
 
 
 
+
+
+
+
+
+
+
 exports.likePost = async function (req, res) {
   const { userId, postId } = req.body;
   console.log("bodydata", req.body);
@@ -104,6 +110,8 @@ exports.likePost = async function (req, res) {
         const like = post?.likes;
         like.push(userId);
         post.likes = like;
+       // console.log();
+        // console.log(isLike);
         const result = await postSchemaModel.updateOne({ _id: postId }, post);
         return res
           .status(200)
@@ -133,6 +141,9 @@ exports.likePost = async function (req, res) {
   }
 };
 
+
+
+
 exports.getAllPost = async function (req, res) {
   try {
     const result = (await postSchemaModel.find({type:"image"})).reverse();
@@ -148,13 +159,14 @@ exports.getAllPost = async function (req, res) {
 };
 
 
+
 exports.getAllReels = async function (req, res) {
   try {
     const result = (await postSchemaModel.find({type:"reel"})).reverse();
     console.log("resulthdijl", result);
     res.status(200).json({
       sucess: true,
-      message: "post get successfuly",
+      message: "reels get successfuly",
       data: result,
     });
   } catch (error) {
