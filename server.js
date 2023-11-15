@@ -1,68 +1,79 @@
-'use strict';
-var cors = require('cors')
-var fileUpload=require('express-fileupload')
-require('dotenv').config();
-var express = require('express'),
-
-
+"use strict";
+var cors = require("cors");
+var fileUpload = require("express-fileupload");
+require("dotenv").config();
+var express = require("express"),
   app = express(),
   port = process.env.PORT || 3000,
-
-  User = require('./api/models/userModel'),
-  bodyParser = require('body-parser'),
+  User = require("./api/models/userModel"),
+  bodyParser = require("body-parser"),
   jsonwebtoken = require("jsonwebtoken");
 
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const option = {
-    socketTimeoutMS: 30000,
-    keepAlive: true,
-    reconnectTries: 30000
+  socketTimeoutMS: 30000,
+  keepAlive: true,
+  reconnectTries: 30000,
 };
 
 const mongoURI = process.env.MONGODB_URI;
-mongoose.connect(mongoURI).then(function(){
-    console.log("DB connected successfully")
-}, function(err) {
+mongoose.connect(mongoURI).then(
+  function () {
+    console.log("DB connected successfully");
+  },
+  function (err) {
     console.log("DB not connected:", err);
-});
+  }
+);
 
-app.use(fileUpload({
-  useTempFiles:true
-}))
+app.use(
+  fileUpload({
+    useTempFiles: true,
+  })
+);
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cors());
-app.use(function(req, res, next) {
-  if (req.headers && req.headers.authorization && req.headers.authorization.split(' ')[0] === 'JWT') {
-    jsonwebtoken.verify(req.headers.authorization.split(' ')[1], 'RESTFULAPIs', function(err, decode) {
-      if (err) req.user = undefined;
-      req.user = decode;
-      next();
-    });
+app.use(function (req, res, next) {
+  console.log("req", req.headers);
+  if (
+    req.headers &&
+    req.headers.authorization &&
+    req.headers.authorization.split(" ")[0] === "Bearer"
+  ) {
+    try {
+      console.log("isvalid", req.headers.authorization.split(" "));
+
+      const isValid= jsonwebtoken.verify(
+        req.headers.authorization.split(" ")[1],
+        process.env.JWT_SECRET_KEY
+      );
+  
+
+    } catch (error) {
+      console.log("error",error);
+    }
+
+
   } else {
     req.user = undefined;
-    next();
+    
   }
+  next();
 });
-app.use(express.static("post"))
-var userRoutes = require('./api/routes/userRoutes');
-var postRoutes = require('./api/routes/postRoutes');
+app.use(express.static("post"));
+var userRoutes = require("./api/routes/userRoutes");
+var postRoutes = require("./api/routes/postRoutes");
 
 userRoutes(app);
 postRoutes(app);
 
-console.log("cloudname",process.env.CLOUD_NAME);
-console.log("APIKEY",process.env.API_KEY);
-console.log("SECREAT KEY",process.env.API_SECREAT);
-
-
-
-app.use(function(req, res) {
-  res.status(404).send({ url: req.originalUrl + ' not found' })
+app.use(function (req, res) {
+  res.status(404).send({ url: req.originalUrl + " not found" });
 });
 
 app.listen(port);
 
-console.log('RESTful API server started on: ' + port);
+console.log("RESTful API server started on: " + port);
 
 module.exports = app;
