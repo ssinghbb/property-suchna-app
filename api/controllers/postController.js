@@ -1,5 +1,5 @@
 var mongoose = require("mongoose");
-var postSchemaModel = require("../models/postModel");
+//var postSchemaModel = require("../models/postModel");
 var path = require("path");
 var UserSchema = require("../models/userModel");
 var postSchemaModel = require("../models/postModel");
@@ -9,8 +9,6 @@ cloudinary.config({
   api_key: process.env.API_KEY,
   api_secret: process.env.API_SECREAT,
 });
-
-
 
 exports.upload = async function (req, res) {
   const { userId, caption = "", userName, location, description } = req.body;
@@ -36,11 +34,11 @@ exports.upload = async function (req, res) {
         .json({ sucess: false, massage: " file is requred..." });
     }
     const uploadedFile = req?.files?.file;
-    console.log("uploadedFile",uploadedFile);
+    console.log("uploadedFile", uploadedFile);
 
     const isVideo = uploadedFile.mimetype.startsWith("video/");
 
-    console.log("isVideo",isVideo);
+    console.log("isVideo", isVideo);
 
     const result = await cloudinary.uploader.upload(uploadedFile.tempFilePath, {
       resource_type: isVideo ? "video" : "image",
@@ -52,7 +50,7 @@ exports.upload = async function (req, res) {
       caption,
       userId: userId,
       url: result.secure_url,
-      type:isVideo? "reel":"image",
+      type: isVideo ? "reel" : "image",
       location: location,
       description: description,
       likes: [],
@@ -82,8 +80,6 @@ exports.upload = async function (req, res) {
 
 exports.likePost = async function (req, res) {
   const { userId, postId } = req.body;
-  console.log("bodydata", req.body);
-  console.log("postId", postId);
   try {
     if (!userId) {
       return res.status(400).json({ sucess: false, message: "userId require" });
@@ -92,32 +88,26 @@ exports.likePost = async function (req, res) {
     if (!postId) {
       return res.status(400).json({ sucess: false, message: "postId require" });
     }
-    console.log("postId", postId);
     const post = await postSchemaModel.findOne({ _id: postId });
 
     if (post) {
-      console.log("post receve...", post);
       const isLike = post?.likes?.includes(userId);
-      console.log("islike", isLike);
       if (!isLike) {
         const like = post?.likes;
         like.push(userId);
         post.likes = like;
-       // console.log();
-        // console.log(isLike);
         const result = await postSchemaModel.updateOne({ _id: postId }, post);
         return res
           .status(200)
-          .json({ sucess: true, message: "like succesfully" });
+          .json({ sucess: true, message: "like succesfully" ,post});
       } else {
         const indexOfDislike = post.likes.indexOf(userId);
-        console.log("indexofdis", indexOfDislike);
         if (indexOfDislike !== -1) {
           post.likes.splice(indexOfDislike, 1);
           const result = await postSchemaModel.updateOne({ _id: postId }, post);
           return res
             .status(200)
-            .json({ success: true, message: "Dislike successful" });
+            .json({ success: true, message: "Dislike successful",post });
         } else {
           return res
             .status(400)
@@ -134,9 +124,49 @@ exports.likePost = async function (req, res) {
   }
 };
 
+
+
+exports.getPostLikes = async function (req, res) {
+  console.log("req.params", req.params);
+  const _id = req.params._id;
+  console.log("postId", _id);
+  try {
+    if (!_id) {
+      return res
+        .status(404)
+        .json({ success: false, message: "postId is require" });
+    }
+    const result = await postSchemaModel.findById({ _id });
+    console.log("result", result);
+    if (result) {
+      const likes = result.likes || [];
+      //const totalLikes = likes.length;
+      console.log("likes", likes);
+      return res
+        .status(200)
+        .json({
+          success: true,
+          message: "get likes successfully",
+          likes,
+         // totalLikes,
+        });
+    } else {
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
+    }
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "server error" }, error);
+  }
+};
+
+
+
 exports.getAllPost = async function (req, res) {
   try {
-    const result = (await postSchemaModel.find({type:"image"})).reverse();
+    const result = (await postSchemaModel.find({ type: "image" })).reverse();
     console.log("resulthdijl", result);
     res.status(200).json({
       sucess: true,
@@ -147,11 +177,10 @@ exports.getAllPost = async function (req, res) {
     res.status(500).json({ sucess: false, message: "server error", error });
   }
 };
-
 
 exports.getAllReels = async function (req, res) {
   try {
-    const result = (await postSchemaModel.find({type:"reel"})).reverse();
+    const result = (await postSchemaModel.find({ type: "reel" })).reverse();
     console.log("resulthdijl", result);
     res.status(200).json({
       sucess: true,
@@ -162,4 +191,13 @@ exports.getAllReels = async function (req, res) {
     res.status(500).json({ sucess: false, message: "server error", error });
   }
 };
+
+
+
+
+
+
+
+
+
 
