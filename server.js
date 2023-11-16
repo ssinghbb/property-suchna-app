@@ -35,26 +35,22 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cors());
 app.use(function (req, res, next) {
-  console.log("req", req.headers);
   if (
     req.headers &&
     req.headers.authorization &&
     req.headers.authorization.split(" ")[0] === "Bearer"
   ) {
     try {
-      console.log("isvalid", req.headers.authorization.split(" "));
 
       const isValid= jsonwebtoken.verify(
         req.headers.authorization.split(" ")[1],
         process.env.JWT_SECRET_KEY
       );
-  
+    req.user = isValid.data;
 
     } catch (error) {
       console.log("error",error);
     }
-
-
   } else {
     req.user = undefined;
     
