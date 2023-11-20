@@ -3,6 +3,7 @@ var mongoose = require("mongoose");
 var path = require("path");
 var UserSchema = require("../models/userModel");
 var postSchemaModel = require("../models/postModel");
+const { log } = require("console");
 var cloudinary = require("cloudinary").v2;
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
@@ -54,6 +55,7 @@ exports.upload = async function (req, res) {
       location: location,
       description: description,
       likes: [],
+      comment: [],
       user: userDetails,
     };
 
@@ -76,8 +78,6 @@ exports.upload = async function (req, res) {
   }
 };
 
-
-
 exports.likePost = async function (req, res) {
   const { userId, postId } = req.body;
   try {
@@ -99,7 +99,7 @@ exports.likePost = async function (req, res) {
         const result = await postSchemaModel.updateOne({ _id: postId }, post);
         return res
           .status(200)
-          .json({ sucess: true, message: "like succesfully" ,post});
+          .json({ sucess: true, message: "like succesfully", post });
       } else {
         const indexOfDislike = post.likes.indexOf(userId);
         if (indexOfDislike !== -1) {
@@ -107,7 +107,7 @@ exports.likePost = async function (req, res) {
           const result = await postSchemaModel.updateOne({ _id: postId }, post);
           return res
             .status(200)
-            .json({ success: true, message: "Dislike successful",post });
+            .json({ success: true, message: "Dislike successful", post });
         } else {
           return res
             .status(400)
@@ -123,8 +123,6 @@ exports.likePost = async function (req, res) {
       .json({ sucess: false, message: "sever error", error });
   }
 };
-
-
 
 exports.getPostLikes = async function (req, res) {
   console.log("req.params", req.params);
@@ -142,14 +140,12 @@ exports.getPostLikes = async function (req, res) {
       const likes = result.likes || [];
       //const totalLikes = likes.length;
       console.log("likes", likes);
-      return res
-        .status(200)
-        .json({
-          success: true,
-          message: "get likes successfully",
-          likes,
-         // totalLikes,
-        });
+      return res.status(200).json({
+        success: true,
+        message: "get likes successfully",
+        likes,
+        // totalLikes,
+      });
     } else {
       return res
         .status(404)
@@ -161,8 +157,6 @@ exports.getPostLikes = async function (req, res) {
       .json({ success: false, message: "server error" }, error);
   }
 };
-
-
 
 exports.getAllPost = async function (req, res) {
   try {
@@ -194,10 +188,49 @@ exports.getAllReels = async function (req, res) {
 
 
 
+exports.addComment = async function (req, res) {
+  const { postId, userId, comment } = req.body;
+  console.log("req...", req.body);
 
+  try {
+    if (!postId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "postId required" });
+    }
+    if (!userId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "userId required" });
+    }
+    if (!comment) {
+      return res
+        .status(400)
+        .json({ success: false, message: "comment required" });
+    }
+    const post = await postSchemaModel.findOne({ _id: postId });
 
+    if (!post) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
+    }
+    post.comment.push({ userId, comment: comment });
+    const result = await post.save();
+    console.log(result);
 
-
-
-
-
+    if (result) {
+      return res
+        .status(200)
+        .json({ success: true, message: "Comment added successfully" });
+    }else{
+      return res
+        .status(404)
+        .json({ success: false, message: " Error in Comment added" });
+    }
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error", error });
+  }
+};
