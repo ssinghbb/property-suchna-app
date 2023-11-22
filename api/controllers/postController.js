@@ -99,7 +99,7 @@ exports.likePost = async function (req, res) {
         const result = await postSchemaModel.updateOne({ _id: postId }, post);
         return res
           .status(200)
-          .json({ sucess: true, message: "like succesfully" ,post});
+          .json({ sucess: true, message: "like succesfully", post });
       } else {
         const indexOfDislike = post.likes.indexOf(userId);
         if (indexOfDislike !== -1) {
@@ -107,7 +107,7 @@ exports.likePost = async function (req, res) {
           const result = await postSchemaModel.updateOne({ _id: postId }, post);
           return res
             .status(200)
-            .json({ success: true, message: "Dislike successful",post });
+            .json({ success: true, message: "Dislike successful", post });
         } else {
           return res
             .status(400)
@@ -148,7 +148,7 @@ exports.getPostLikes = async function (req, res) {
           success: true,
           message: "get likes successfully",
           likes,
-         // totalLikes,
+          // totalLikes,
         });
     } else {
       return res
@@ -165,13 +165,20 @@ exports.getPostLikes = async function (req, res) {
 
 
 exports.getAllPost = async function (req, res) {
+  const { page = 1, limit = 10 } = req.query;
+
   try {
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+
     const result = (await postSchemaModel.find({ type: "image" })).reverse();
+    const data = result.slice(startIndex, endIndex)
+    console.log("data:", data)
     console.log("resulthdijl", result);
     res.status(200).json({
       sucess: true,
       message: "post get successfuly",
-      data: result,
+      data: data,
     });
   } catch (error) {
     res.status(500).json({ sucess: false, message: "server error", error });
