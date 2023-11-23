@@ -13,6 +13,16 @@ var UserSchema = new Schema({
     trim: true,
     required: true
   },
+  url: {
+    type: String,
+    trim: true,
+    //required:true
+  },
+  bio: {
+    type: String,
+    trim: true,
+    //required:true
+  },
   phoneNumber: {
     type: String,
     unique: true,

@@ -4,12 +4,16 @@ var path = require("path");
 var UserSchema = require("../models/userModel");
 var postSchemaModel = require("../models/postModel");
 const { log } = require("console");
+const userSchemaModel = require("../models/userModel");
 var cloudinary = require("cloudinary").v2;
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.API_KEY,
   api_secret: process.env.API_SECREAT,
 });
+
+
+
 
 exports.upload = async function (req, res) {
   const { userId, caption = "", userName, location, description } = req.body;
@@ -179,6 +183,7 @@ exports.getAllPost = async function (req, res) {
   }
 };
 
+
 exports.getAllReels = async function (req, res) {
   try {
     const result = (await postSchemaModel.find({ type: "reel" })).reverse();
@@ -195,10 +200,9 @@ exports.getAllReels = async function (req, res) {
 
 
 
+
 exports.addComment = async function (req, res) {
   const { postId, userId, comment } = req.body;
-  console.log("req...", req.body);
-
   try {
     if (!postId) {
       return res
@@ -215,6 +219,18 @@ exports.addComment = async function (req, res) {
         .status(400)
         .json({ success: false, message: "comment required" });
     }
+
+    console.log("Provided userId:", userId);
+
+    const user = await userSchemaModel.findOne({ _id: userId });
+
+    console.log("userdetails", user);
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
     const post = await postSchemaModel.findOne({ _id: postId });
 
     if (!post) {
@@ -222,18 +238,22 @@ exports.addComment = async function (req, res) {
         .status(404)
         .json({ success: false, message: "Post not found" });
     }
-    post.comment.push({ userId, comment: comment });
+    const userName = user?.fullName;
+    console.log("userFullname", userName);
+
+    post.comment.push({ userId, comment: comment, userName: userName });
     const result = await post.save();
-    console.log(result);
 
     if (result) {
-      return res
-        .status(200)
-        .json({ success: true, message: "Comment added successfully" });
-    }else{
+      return res.status(200).json({
+        success: true,
+        message: "Comment added successfully",
+        data: result?.data,
+      });
+    } else {
       return res
         .status(404)
-        .json({ success: false, message: " Error in Comment added" });
+        .json({ success: false, message: "Error in Comment added" });
     }
   } catch (error) {
     return res
@@ -241,3 +261,40 @@ exports.addComment = async function (req, res) {
       .json({ success: false, message: "Server error", error });
   }
 };
+
+
+
+exports.getComments = async (req, res) => {
+  const { postId } = req.params;
+  console.log("postId", postId);
+  try {
+    if (!postId) {
+      return res
+        .status(404)
+        .json({ success: false, message: "postId require" });
+    }
+    const result = await postSchemaModel.findById({ _id: postId });
+    console.log("result", result);
+
+    if (!result) {
+      return res
+        .status(404)
+        .json({ success: false, message: "post not found" });
+    }
+
+    const comments = (result?.comment).reverse();
+
+    return res
+      .status(200)
+      .json({
+        success: true,
+        message: "comment get successfully",
+        data: comments,
+      });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "server erroe", error });
+  }
+};
+
