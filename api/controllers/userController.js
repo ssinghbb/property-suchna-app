@@ -253,11 +253,11 @@ exports.updateUser = async function (req, res) {
   console.log("req",req);
   console.log("Request body:", req?.files?.file);
 
-  const { fullName, phoneNumber, bio, userId } = req?.body;
+  const { fullName, bio, userId } = req?.body;
   // const _id = req?.params?._id;
 
   console.log("userId", userId);
-  console.log("fullname", fullName, phoneNumber, bio, userId);
+  console.log("fullname", fullName, bio, userId);
 
   try {
     if (!userId) {
@@ -286,9 +286,9 @@ exports.updateUser = async function (req, res) {
       user.fullName = req.body.fullName;
     }
 
-    if (req.body.phoneNumber) {
-      user.phoneNumber = req.body.phoneNumber;
-    }
+    // if (req.body.phoneNumber) {
+    //   user.phoneNumber = req.body.phoneNumber;
+    // }
 
     if (req.body.bio) {
       user.bio = req.body.bio;
