@@ -3,7 +3,7 @@
 const { decrypt } = require("dotenv");
 const userSchemaModel = require("../models/userModel");
 
-require("dotenv").config(); // Load environment variables from .env file
+require("dotenv").config();
 var mongoose = require("mongoose"),
   jwt = require("jsonwebtoken"),
   bcrypt = require("bcrypt"),
@@ -14,86 +14,57 @@ const client = require("twilio")(
   process.env.AUTH_TOKEN
 );
 
-// exports.register = function(req, res) {
-//   var newUser = new User(req.body);
-//   newUser.password = req.body.password;
-//   newUser.confirmPassword = req.body.confirmPassword;
+var cloudinary = require("cloudinary").v2;
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.API_KEY,
+  api_secret: process.env.API_SECREAT,
+});
 
-//   // Check if password and confirmPassword match
-//   if (req.body.password !== req.body.confirmPassword) {
-//     return res.status(400).json({ message: "Password and confirm password do not match." });
-//   }
+//user register
+exports.register = async function (req, res) {
+  const data = req.body || {};
 
-//   // Check if the phone number already exists in the database
-//   if (!req.body.phoneNumber) {
-//     return res.status(400).json({ message: "Phone number is required." });
-//   }
+  console.log("L66 this is phone number:", req.body);
+  console.log("L66 this is phone number:", req.body.phoneNumber);
 
-//   User.findOne({ phoneNumber: req.body.phoneNumber })
-//     .then(existingUser => {
-//       if (existingUser) {
-//         return res.status(400).json({ message: "User with this phone number already exists." });
-//       }
+  if (!data.phoneNumber) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Phone number is required." });
+  }
+  const existingUser = await userSchemaModel.findOne({
+    phoneNumber: req.body.phoneNumber,
+  });
 
-//       // Hash the password and confirmPassword before saving
-//       newUser.hash_password = bcrypt.hashSync(req.body.password, 10);
-//       newUser.confirmPassword = bcrypt.hashSync(req.body.confirmPassword, 10);
-
-//       newUser.save()
-//         .then(user => {
-//           if (!user) {
-//             return res.status(400).send({
-//               message: "User registration failed. Please try again."
-//             });
-//           }
-//           user.password = undefined;
-//           user.confirmPassword = undefined;
-//           return res.json(user._id);
-//         })
-//         .catch(err => {
-//           let errorMessage = "An error occurred while creating the user.";
-//           return res.status(400).send({
-//             message: errorMessage
-//           });
-//         });
-//     })
-//     .catch(err => {
-//       return res.status(500).send({ message: "Internal Server Error" });
-//     });
-// };
-
-//send otp
-
-const sendOtp = function (req, res) {
-  console.log("req.body.phoneNumber:", req.body.phoneNumber);
-  console.log("This is service id:", process.env.SERVICE_ID);
-  console.log("This is auth id:", process.env.AUTH_TOKEN);
-
-  console.log("This is account id:", process.env.ACCOUNT_SID);
-
-  if (!req.body.phoneNumber) {
-    return res.status(400).json({ message: "Phone number is required." });
+  if (existingUser) {
+    console.log("existingUser:", existingUser);
+    return res.status(400).json({
+      success: false,
+      message: "User with this phone number already exists.",
+    });
   }
   try {
     client.verify.v2
       .services(process.env.SERVICE_ID)
       .verifications.create({
-        to: `+${req.body.phoneNumber}`,
+        to: `+${data.phoneNumber}`,
         channel: "sms", // You can specify the channel here, either 'sms' or 'call'
       })
       .then((data) => {
         console.log("data:", data);
-        return res.json({ data: "Otp send successfull" });
+        return res.json({ success: true, data: "Otp send successfull" });
       })
       .catch((err) => {
         console.log("err:", err);
-        return res
-          .status(500)
-          .json({ message: "Twilio verification failed. Please try again." });
+        return res.status(500).json({
+          success: false,
+          message: "Twilio verification failed. Please try again.",
+        });
       });
   } catch (error) {
     console.log("error:", error);
-    return res.status(500).json({ error: error });
+    return res.status(500).json({ success: false, error: error });
   }
 };
 
@@ -208,72 +179,9 @@ exports.verify = function (req, res) {
     });
 };
 
-//user register
-exports.register = async function (req, res) {
-  const data = req.body || {};
-
-  console.log("L66 this is phone number:", req.body);
-  console.log("L66 this is phone number:", req.body.phoneNumber);
-  // Check if password and confirmPassword match
-
-  // Check if the phone number already exists in the database
-  if (!data.phoneNumber) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Phone number is required." });
-  }
-  const existingUser = await userSchemaModel.findOne({
-    phoneNumber: req.body.phoneNumber,
-  });
-
-  if (existingUser) {
-    console.log("existingUser:", existingUser);
-    return res.status(400).json({
-      success: false,
-      message: "User with this phone number already exists.",
-    });
-  }
-
-  // Hash the password and confirmPassword before saving
-  // data.hash_password = bcrypt.hashSync(req.body.password, 10);
-  // data.confirmPassword = bcrypt.hashSync(req.body.confirmPassword, 10);
-
-  try {
-    // const result=await client.verify.v2
-    //   .services(process.env.SERVICE_ID)
-    //   .verifications.create({
-    //     to: `+${data.phoneNumber}`,
-    //     channel: "sms", // You can specify the channel here, either 'sms' or 'call'
-    //   })
-
-    client.verify.v2
-      .services(process.env.SERVICE_ID)
-      .verifications.create({
-        to: `+${data.phoneNumber}`,
-        channel: "sms", // You can specify the channel here, either 'sms' or 'call'
-      })
-      .then((data) => {
-        console.log("data:", data);
-        return res.json({ success: true, data: "Otp send successfull" });
-      })
-      .catch((err) => {
-        console.log("err:", err);
-        return res.status(500).json({
-          success: false,
-          message: "Twilio verification failed. Please try again.",
-        });
-      });
-  } catch (error) {
-    console.log("error:", error);
-    return res.status(500).json({ success: false, error: error });
-  }
-};
-
 exports.testapi = function (req, res) {
   return res.status(200).json({ message: "Server is running...." });
 };
-
-
 
 exports.sign_in = async function (req, res) {
   const { phoneNumber, password } = req.body;
@@ -288,40 +196,6 @@ exports.sign_in = async function (req, res) {
       .status(404)
       .json({ success: false, message: "password is require" });
   }
-
-  // try {
-  //   const user = await userSchemaModel.findOne({ phoneNumber });
-  //   if (user) {
-  //     console.log("user",user);
-  //     if (bcrypt.compare(password, user.hash_password)) {
-  //       console.log("btypassword",bcrypt.compare(password, user.hash_password));
-  //       const expirationTime =
-  //         Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365;
-  //       const token = jwt.sign(
-  //         { data: { _id: user._id }, exp: expirationTime },
-  //         process.env.JWT_SECRET_KEY
-  //       );
-  //      //const values= jwt.verify(token, process.env.JWT_SECRET_KEY)
-  //       return res.status(200).json({
-  //         success: true,
-  //         message: "login successfully",
-  //         data: { user, token },
-  //       });
-  //     } else {
-  //       return res
-  //         .status(404)
-  //         .json({ success: false, message: "incorrect password" });
-  //     }
-  //   } else {
-  //     return res
-  //       .status(404)
-  //       .json({ success: false, message: "user not found" });
-  //   }
-  // } catch (error) {
-  //   return res
-  //     .status(500)
-  //     .json({ success: false, message: "server error", error });
-  // }
 
   try {
     const user = await userSchemaModel.findOne({ phoneNumber });
@@ -372,5 +246,64 @@ exports.profile = function (req, res, next) {
     next();
   } else {
     return res.status(401).json({ message: "Invalid token" });
+  }
+};
+
+exports.updateUser = async function (req, res) {
+  console.log("req",req);
+  console.log("Request body:", req?.files?.file);
+
+  const { fullName, phoneNumber, bio, userId } = req?.body;
+  // const _id = req?.params?._id;
+
+  console.log("userId", userId);
+  console.log("fullname", fullName, phoneNumber, bio, userId);
+
+  try {
+    if (!userId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "userId not found" });
+    }
+
+    const user = await userSchemaModel.findById(userId);
+    console.log("user", user);
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+    const uploadedFile = req?.files?.file;
+
+    console.log("upladfile", uploadedFile);
+
+    const result = await cloudinary.uploader.upload(uploadedFile.tempFilePath);
+    if (result) {
+      user.url = result.secure_url;
+    }
+    if (req.body.fullName) {
+      user.fullName = req.body.fullName;
+    }
+
+    if (req.body.phoneNumber) {
+      user.phoneNumber = req.body.phoneNumber;
+    }
+
+    if (req.body.bio) {
+      user.bio = req.body.bio;
+    }
+
+    const updatedUser = await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "User updated successfully",
+      data: updatedUser,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error", error });
   }
 };

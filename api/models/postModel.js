@@ -1,6 +1,7 @@
 "use strict";
 
 const mongoose = require("mongoose");
+const userSchemaModel = require("./userModel");
 const { ObjectId } = mongoose.Schema.Types;
 const Schema = mongoose.Schema;
 var postSchema = new Schema({
@@ -20,9 +21,13 @@ var postSchema = new Schema({
   ],
   comment: [
     {
+      
       userId: {
         type: ObjectId,
         required: true,
+      },
+      userName: {
+        type: String,
       },
       comment: {
         type: String,
