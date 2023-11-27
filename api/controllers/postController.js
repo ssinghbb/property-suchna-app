@@ -12,9 +12,6 @@ cloudinary.config({
   api_secret: process.env.API_SECREAT,
 });
 
-
-
-
 exports.upload = async function (req, res) {
   const { userId, caption = "", userName, location, description } = req.body;
   try {
@@ -81,6 +78,52 @@ exports.upload = async function (req, res) {
       .json({ sucess: false, massage: "server error", data: error });
   }
 };
+
+
+exports.postDelete = async function (req, res) {
+  console.log("req", req.params);
+
+  const { postId, userId } = req.params;
+  console.log("postId", postId);
+  console.log("userId", userId);
+  try {
+    if (!userId || !postId) {
+      return res
+        .status(404)
+        .json({ success: false, message: "userId and postId required"             });
+    }
+    const existingpost = await postSchemaModel.findById(postId);
+    console.log("post", existingpost);
+    if (!existingpost) {
+      return res
+        .status(404)
+        .json({ success: false, message: "post not found" });
+    }
+
+    if (existingpost.userId.toString() !== userId) {
+      return res.status(404).json({
+        success: false,
+        message: "Unauthorized: Post does not belong to the user.",
+      });
+    }
+    const deletePost = await postSchemaModel.findByIdAndDelete(postId);
+
+    if (deletePost) {
+      return res
+        .status(200)
+        .json({ success: true, message: "post delete successfully" });
+    } else {
+      return res
+        .status(404)
+        .json({ success: false, message: "Failed to delete post." });
+    }
+  } catch (error) {
+    return res
+      .status(404)
+      .json({ sucess: false, message: "sever error", error });
+  }
+};
+
 
 exports.likePost = async function (req, res) {
   const { userId, postId } = req.body;
@@ -170,8 +213,8 @@ exports.getAllPost = async function (req, res) {
     const endIndex = page * limit;
 
     const result = (await postSchemaModel.find({ type: "image" })).reverse();
-    const data = result.slice(startIndex, endIndex)
-    console.log("data:", data)
+    const data = result.slice(startIndex, endIndex);
+    console.log("data:", data);
     console.log("resulthdijl", result);
     res.status(200).json({
       sucess: true,
@@ -182,7 +225,6 @@ exports.getAllPost = async function (req, res) {
     res.status(500).json({ sucess: false, message: "server error", error });
   }
 };
-
 
 exports.getAllReels = async function (req, res) {
   try {
@@ -197,9 +239,6 @@ exports.getAllReels = async function (req, res) {
     res.status(500).json({ sucess: false, message: "server error", error });
   }
 };
-
-
-
 
 exports.addComment = async function (req, res) {
   const { postId, userId, comment } = req.body;
@@ -262,8 +301,6 @@ exports.addComment = async function (req, res) {
   }
 };
 
-
-
 exports.getComments = async (req, res) => {
   const { postId } = req.params;
   console.log("postId", postId);
@@ -284,17 +321,14 @@ exports.getComments = async (req, res) => {
 
     const comments = (result?.comment).reverse();
 
-    return res
-      .status(200)
-      .json({
-        success: true,
-        message: "comment get successfully",
-        data: comments,
-      });
+    return res.status(200).json({
+      success: true,
+      message: "comment get successfully",
+      data: comments,
+    });
   } catch (error) {
     return res
       .status(500)
       .json({ success: false, message: "server erroe", error });
   }
 };
-

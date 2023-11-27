@@ -7,6 +7,7 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 module.exports = function (app) {
   app.route("/post/upload").post(postController.upload);
+  app.route("/post/delete/:postId/:userId").delete(postController.postDelete);
   app.route("/post/like").put(postController.likePost);
   app.route("/post/likes/:_id").get(postController.getPostLikes);
   app.route("/post/allpost").get(postController.getAllPost);
