@@ -39,6 +39,14 @@ var UserSchema = new Schema({
   created: {
     type: Date,
     default: Date.now
+  },
+  postCount: {
+    type: Number,
+    default: 0
+  },
+  plan: {
+    type: String,
+    default: 'basic'
   }
 });
 
@@ -46,5 +54,5 @@ UserSchema.methods.comparePassword = function (password) {
   return bcrypt.compareSync(password, this.hash_password);
 };
 
-const userSchemaModel= mongoose.model('User', UserSchema);
-module.exports=userSchemaModel;
+const userSchemaModel = mongoose.model('User', UserSchema);
+module.exports = userSchemaModel;

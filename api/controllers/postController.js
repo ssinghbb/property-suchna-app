@@ -63,6 +63,11 @@ exports.upload = async function (req, res) {
     const addPost = await postSchemaModel.create(data);
     console.log("data", addPost);
     if (addPost) {
+      let _updatePostCount = await userDetails.updateOne(
+
+        { $inc: { postCount: 1 } }
+      )
+      console.log("_updatePostCount:", _updatePostCount)
       return res.status(200).json({
         sucess: true,
         massage: "file uploaded susessfuly in database.....",
@@ -90,7 +95,7 @@ exports.postDelete = async function (req, res) {
     if (!userId || !postId) {
       return res
         .status(404)
-        .json({ success: false, message: "userId and postId required"             });
+        .json({ success: false, message: "userId and postId required" });
     }
     const existingpost = await postSchemaModel.findById(postId);
     console.log("post", existingpost);
@@ -214,8 +219,8 @@ exports.getAllPost = async function (req, res) {
 
     const result = (await postSchemaModel.find({ type: "image" })).reverse();
     const data = result.slice(startIndex, endIndex);
-    console.log("data:", data);
-    console.log("resulthdijl", result);
+    // console.log("data:", data);
+    // console.log("resulthdijl", result);
     res.status(200).json({
       sucess: true,
       message: "post get successfuly",
