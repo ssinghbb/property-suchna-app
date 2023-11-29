@@ -81,6 +81,7 @@ exports.upload = async function (req, res) {
 
 
 exports.postDelete = async function (req, res) {
+  console.log("reqqqqq",req);
   console.log("req", req.params);
 
   const { postId, userId } = req.params;
@@ -90,7 +91,7 @@ exports.postDelete = async function (req, res) {
     if (!userId || !postId) {
       return res
         .status(404)
-        .json({ success: false, message: "userId and postId required"             });
+        .json({ success: false, message: "userId and postId required" });
     }
     const existingpost = await postSchemaModel.findById(postId);
     console.log("post", existingpost);
@@ -100,7 +101,8 @@ exports.postDelete = async function (req, res) {
         .json({ success: false, message: "post not found" });
     }
 
-    if (existingpost.userId.toString() !== userId) {
+    if (existingpost.userId.toString()!== userId) {
+      //console.log("");
       return res.status(404).json({
         success: false,
         message: "Unauthorized: Post does not belong to the user.",
@@ -111,16 +113,16 @@ exports.postDelete = async function (req, res) {
     if (deletePost) {
       return res
         .status(200)
-        .json({ success: true, message: "post delete successfully" });
+        .json({ success: true, message: "post delete successfully"});
     } else {
       return res
         .status(404)
-        .json({ success: false, message: "Failed to delete post." });
+        .json({ success: false, message: "Failed to delete post."});
     }
   } catch (error) {
     return res
-      .status(404)
-      .json({ sucess: false, message: "sever error", error });
+      .status(500)
+      .json({ success: false, message: "sever error", error });
   }
 };
 
