@@ -250,7 +250,7 @@ exports.profile = function (req, res, next) {
 };
 
 exports.updateUser = async function (req, res) {
-  console.log("req",req);
+  console.log("req", req);
   console.log("Request body:", req?.files?.file);
 
   const { fullName, bio, userId } = req?.body;
@@ -305,5 +305,34 @@ exports.updateUser = async function (req, res) {
     return res
       .status(500)
       .json({ success: false, message: "Server error", error });
+  }
+};
+
+
+
+
+exports.whatsAppMessage = async function (req, res) {
+  const {Location,Name,Description,Queries}=req.body;
+  console.log("Location",Location);
+  console.log("Name",Name);
+  console.log("Description",Description);
+
+  console.log("Queries",Queries);
+
+  try {
+    client.messages
+      .create({
+        body: `\nLocation: ${Location},\nUsername: ${Name},\nDescription: ${Description},\nQuery: ${Queries}`,
+        from: "whatsapp:+14155238886",
+        to: "whatsapp:+918319453618" ,
+      })
+      .then((message) => console.log("message send successfully"));
+    return res
+      .status(200)
+      .json({ success: true, message: "message send successfully" });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "server error", error });
   }
 };
