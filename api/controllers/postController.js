@@ -3,17 +3,45 @@ var mongoose = require("mongoose");
 var path = require("path");
 var UserSchema = require("../models/userModel");
 var postSchemaModel = require("../models/postModel");
-const { log } = require("console");
+const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
+
+const crypto = require('crypto')
+const sharp = require('sharp')
 const userSchemaModel = require("../models/userModel");
-var cloudinary = require("cloudinary").v2;
-cloudinary.config({
-  cloud_name: process.env.CLOUD_NAME,
-  api_key: process.env.API_KEY,
-  api_secret: process.env.API_SECREAT,
-});
+
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+
+
+//aws s3 setup 
+const BUCKET_NAME = process.env.BUCKET_NAME
+const BUCKET_REGION = process.env.BUCKET_REGION
+const ACCESS_KEY = process.env.ACCESS_KEY
+const SECRET_ACCESS_KEY = process.env.SECRET_ACCESS_KEY
+const randomImageName = (bytes = 32) => crypto.randomBytes(bytes).toString('hex')
+
+
+
+const s3 = new S3Client({
+  credentials: {
+    accessKeyId: ACCESS_KEY,
+    secretAccessKey: SECRET_ACCESS_KEY
+  },
+  region: BUCKET_REGION
+})
+
+
+
+
+
+
+
+
 
 exports.upload = async function (req, res) {
   const { userId, caption = "", userName, location, description } = req.body;
+  console.log("req.body:", req.body)
+  console.log("req.body:", req.file)
+  // return res.send({})
   try {
     if (!userId) {
       return res
@@ -30,28 +58,41 @@ exports.upload = async function (req, res) {
         .json({ success: false, message: "User not found" });
     }
 
-    if (!req?.files?.file) {
+    if (!req?.file) {
       return res
         .status(400)
         .json({ sucess: false, massage: " file is requred..." });
     }
-    const uploadedFile = req?.files?.file;
-    console.log("uploadedFile", uploadedFile);
+    const uploadedFile = req?.file;
+    // console.log("uploadedFile", uploadedFile);
 
     const isVideo = uploadedFile.mimetype.startsWith("video/");
 
     console.log("isVideo", isVideo);
+    const buffer = await sharp(req?.file?.buffer).resize({ height: 1920, width: 1080, fit: 'contain' }).toBuffer();
+    const imageName = randomImageName()
+    const params = {
+      Bucket: BUCKET_NAME,
+      Key: imageName,
+      Body: buffer,
+      ContentType: req?.file?.mimetype
+    }
+    
+    const rr = new PutObjectCommand(params)
+    console.log("rr:", rr)
+    const ans = await s3.send(rr)
+    console.log("ans:", ans)
 
-    const result = await cloudinary.uploader.upload(uploadedFile.tempFilePath, {
-      resource_type: isVideo ? "video" : "image",
-    });
+    // const result = await cloudinary.uploader.upload(uploadedFile.tempFilePath, {
+    //   resource_type: isVideo ? "video" : "image",
+    // });
 
-    console.log("result", result);
+    // console.log("result", result);
 
     const data = {
       caption,
       userId: userId,
-      url: result.secure_url,
+      url: imageName,
       type: isVideo ? "reel" : "image",
       location: location,
       description: description,
@@ -75,7 +116,7 @@ exports.upload = async function (req, res) {
     } else {
       return res
         .status(404)
-        .json({ sucess: false, massage: "file not save in database....." });
+        .json({ sucess: false, message: "file not save in database....." });
     }
   } catch (error) {
     return res
@@ -86,7 +127,7 @@ exports.upload = async function (req, res) {
 
 
 exports.postDelete = async function (req, res) {
-  console.log("reqqqqq",req);
+  console.log("reqqqqq", req);
   console.log("req", req.params);
 
   const { postId, userId } = req.params;
@@ -99,30 +140,41 @@ exports.postDelete = async function (req, res) {
         .json({ success: false, message: "userId and postId required" });
     }
     const existingpost = await postSchemaModel.findById(postId);
-    console.log("post", existingpost);
+
+    console.log("existingpost", existingpost);
+    const params = {
+      Bucket: BUCKET_NAME,
+      Key: existingpost?.url
+    }
+    const cmd = new DeleteObjectCommand(params)
+    // console.log("cmd:", cmd)
+    const _del = await s3.send(cmd)
+    // console.log("_del:", _del)
     if (!existingpost) {
       return res
         .status(404)
         .json({ success: false, message: "post not found" });
     }
 
-    if (existingpost.userId.toString()!== userId) {
+    if (existingpost.userId.toString() !== userId) {
       //console.log("");
       return res.status(404).json({
         success: false,
         message: "Unauthorized: Post does not belong to the user.",
       });
     }
+
+
     const deletePost = await postSchemaModel.findByIdAndDelete(postId);
 
     if (deletePost) {
       return res
         .status(200)
-        .json({ success: true, message: "post delete successfully"});
+        .json({ success: true, message: "post delete successfully" });
     } else {
       return res
         .status(404)
-        .json({ success: false, message: "Failed to delete post."});
+        .json({ success: false, message: "Failed to delete post." });
     }
   } catch (error) {
     return res
@@ -219,10 +271,21 @@ exports.getAllPost = async function (req, res) {
     const startIndex = (page - 1) * limit;
     const endIndex = page * limit;
 
-    const result = (await postSchemaModel.find({ type: "image" })).reverse();
-    const data = result.slice(startIndex, endIndex);
+    const posts = (await postSchemaModel.find({ type: "image" })).reverse();
+    for (const post of posts) {
+
+      const getObjectParams = {
+        Bucket: BUCKET_NAME,
+        Key: post.url  //imageName
+      }
+      const command = new GetObjectCommand(getObjectParams);
+      const url = await getSignedUrl(s3, command);   //we can also use expires in for security 
+      post.url = url
+    }
     // console.log("data:", data);
     // console.log("resulthdijl", result);
+    const data = posts.slice(startIndex, endIndex);
+    console.log("data:", data)
     res.status(200).json({
       sucess: true,
       message: "post get successfuly",

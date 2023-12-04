@@ -2,6 +2,12 @@
 
 const { decrypt } = require("dotenv");
 const userSchemaModel = require("../models/userModel");
+const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
+
+const crypto = require('crypto')
+const sharp = require('sharp')
+
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 require("dotenv").config();
 var mongoose = require("mongoose"),
@@ -20,6 +26,21 @@ cloudinary.config({
   api_key: process.env.API_KEY,
   api_secret: process.env.API_SECREAT,
 });
+const randomImageName = (bytes = 32) => crypto.randomBytes(bytes).toString('hex')
+
+const BUCKET_NAME = process.env.BUCKET_NAME
+const BUCKET_REGION = process.env.BUCKET_REGION
+const ACCESS_KEY = process.env.ACCESS_KEY
+const SECRET_ACCESS_KEY = process.env.SECRET_ACCESS_KEY
+
+const s3 = new S3Client({
+  credentials: {
+    accessKeyId: ACCESS_KEY,
+    secretAccessKey: SECRET_ACCESS_KEY
+  },
+  region: BUCKET_REGION
+})
+
 
 //user register
 exports.register = async function (req, res) {
@@ -198,7 +219,7 @@ exports.sign_in = async function (req, res) {
   }
 
   try {
-    const user = await userSchemaModel.findOne({ phoneNumber });
+    let user = await userSchemaModel.findOne({ phoneNumber });
     if (user) {
       const passwordMatch = await bcrypt.compare(password, user.hash_password);
       if (passwordMatch) {
@@ -209,7 +230,17 @@ exports.sign_in = async function (req, res) {
           { data: { _id: user._id }, exp: expirationTime },
           process.env.JWT_SECRET_KEY
         );
+        const getObjectParams = {
+          Bucket: BUCKET_NAME,
+          Key: user?.url  //imageName
+        }
+        const command = new GetObjectCommand(getObjectParams);
+        console.log("command:", command)
+        const url = await getSignedUrl(s3, command);   //we can also use expires in for security 
+        console.log("url:", url)
 
+        user.url = url
+        console.log("user?.url:", user?.url)
         return res.status(200).json({
           success: true,
           message: "login successfully",
@@ -251,7 +282,7 @@ exports.profile = function (req, res, next) {
 
 exports.updateUser = async function (req, res) {
   console.log("req", req);
-  console.log("Request body:", req?.files?.file);
+  // console.log("Request body:", req?.files?.file);
 
   const { fullName, bio, userId } = req?.body;
   // const _id = req?.params?._id;
@@ -274,14 +305,33 @@ exports.updateUser = async function (req, res) {
         .status(404)
         .json({ success: false, message: "User not found" });
     }
-    const uploadedFile = req?.files?.file;
+    const uploadedFile = req?.file;
+    const buffer = await sharp(req?.file?.buffer).resize({ height: 1920, width: 1080, fit: 'contain' }).toBuffer();
+
+
 
     console.log("upladfile", uploadedFile);
 
-    const result = await cloudinary.uploader.upload(uploadedFile.tempFilePath);
-    if (result) {
-      user.url = result.secure_url;
+    const imageName = randomImageName()
+    const params = {
+      Bucket: BUCKET_NAME,
+      Key: imageName,
+      Body: buffer,
+      ContentType: req?.file?.mimetype
     }
+
+    const rr = new PutObjectCommand(params)
+    console.log("rr:", rr)
+    const ans = await s3.send(rr)
+    console.log("ans:", ans)
+    if (ans) {
+
+      user.url = imageName;
+    }
+
+    // const result = await cloudinary.uploader.upload(uploadedFile.tempFilePath);
+
+
     if (req.body.fullName) {
       user.fullName = req.body.fullName;
     }
@@ -312,19 +362,19 @@ exports.updateUser = async function (req, res) {
 
 
 exports.whatsAppMessage = async function (req, res) {
-  const {Location,Name,Description,Queries}=req.body;
-  console.log("Location",Location);
-  console.log("Name",Name);
-  console.log("Description",Description);
+  const { Location, Name, Description, Queries } = req.body;
+  console.log("Location", Location);
+  console.log("Name", Name);
+  console.log("Description", Description);
 
-  console.log("Queries",Queries);
+  console.log("Queries", Queries);
 
   try {
     client.messages
       .create({
         body: `\nLocation: ${Location},\nUsername: ${Name},\nDescription: ${Description},\nQuery: ${Queries}`,
         from: "whatsapp:+14155238886",
-        to: "whatsapp:+918319453618" ,
+        to: "whatsapp:+918319453618",
       })
       .then((message) => console.log("message send successfully"));
     return res

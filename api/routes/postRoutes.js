@@ -6,7 +6,7 @@ const { verifyToken } = require("../validations/index.js");
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 module.exports = function (app) {
-  app.route("/post/upload").post(postController.upload);
+  app.post('/post/upload', upload.single('file'), postController.upload)
   app.route("/post/delete/:postId/:userId").delete(postController.postDelete);
   app.route("/post/like").put(postController.likePost);
   app.route("/post/likes/:_id").get(postController.getPostLikes);

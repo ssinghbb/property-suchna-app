@@ -1,6 +1,6 @@
 "use strict";
 var cors = require("cors");
-var fileUpload = require("express-fileupload");
+// var fileUpload = require("express-fileupload");
 require("dotenv").config();
 var express = require("express"),
   app = express(),
@@ -26,12 +26,12 @@ mongoose.connect(mongoURI).then(
   }
 );
 
-app.use(
-  fileUpload({
-    useTempFiles: true,
-  })
-);
- //app.use(bodyParser.json({ limit: '50mb' }));
+// app.use(
+//   fileUpload({
+//     useTempFiles: true,
+//   })
+// );
+//app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cors());
@@ -43,18 +43,18 @@ app.use(function (req, res, next) {
   ) {
     try {
 
-      const isValid= jsonwebtoken.verify(
+      const isValid = jsonwebtoken.verify(
         req.headers.authorization.split(" ")[1],
         process.env.JWT_SECRET_KEY
       );
-    req.user = isValid.data;
+      req.user = isValid.data;
 
     } catch (error) {
-      console.log("error",error);
+      console.log("error", error);
     }
   } else {
     req.user = undefined;
-    
+
   }
   next();
 });
@@ -64,6 +64,7 @@ var postRoutes = require("./api/routes/postRoutes");
 
 userRoutes(app);
 postRoutes(app);
+
 
 app.use(function (req, res) {
   res.status(404).send({ url: req.originalUrl + " not found" });
