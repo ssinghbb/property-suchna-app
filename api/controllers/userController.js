@@ -323,10 +323,19 @@ exports.updateUser = async function (req, res) {
     const rr = new PutObjectCommand(params)
     console.log("rr:", rr)
     const ans = await s3.send(rr)
-    console.log("ans:", ans)
+
+    const getObjectParams = {
+      Bucket: BUCKET_NAME,
+      Key: imageName  //imageName
+    }
+    const command = new GetObjectCommand(getObjectParams);
+    console.log("command:", command)
+    const url = await getSignedUrl(s3, command);   //we can also use expires in for security 
+    console.log("url:", url)
+    // console.log("ans:", ans)
     if (ans) {
 
-      user.url = imageName;
+      user.url = url;
     }
 
     // const result = await cloudinary.uploader.upload(uploadedFile.tempFilePath);
