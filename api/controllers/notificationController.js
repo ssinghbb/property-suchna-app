@@ -4,13 +4,6 @@ const notifcationModel = require("../models/notificationModel");
 require("dotenv").config();
 
 
-
-
-
-
-
-
-
 //user register
 
 //Verify the user mobile number via OTP
