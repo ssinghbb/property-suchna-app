@@ -20,12 +20,7 @@ const client = require("twilio")(
   process.env.AUTH_TOKEN
 );
 
-var cloudinary = require("cloudinary").v2;
-cloudinary.config({
-  cloud_name: process.env.CLOUD_NAME,
-  api_key: process.env.API_KEY,
-  api_secret: process.env.API_SECREAT,
-});
+
 const randomImageName = (bytes = 32) => crypto.randomBytes(bytes).toString('hex')
 
 const BUCKET_NAME = process.env.BUCKET_NAME

@@ -3,6 +3,7 @@ var mongoose = require("mongoose");
 var path = require("path");
 var UserSchema = require("../models/userModel");
 var postSchemaModel = require("../models/postModel");
+var notificationSchemaModel = require('../models/notificationModel')
 const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 
 const crypto = require('crypto')
@@ -77,7 +78,7 @@ exports.upload = async function (req, res) {
       Body: buffer,
       ContentType: req?.file?.mimetype
     }
-    
+
     const rr = new PutObjectCommand(params)
     console.log("rr:", rr)
     const ans = await s3.send(rr)
@@ -185,8 +186,12 @@ exports.postDelete = async function (req, res) {
 
 
 exports.likePost = async function (req, res) {
-  const { userId, postId } = req.body;
+  console.log("likePost:")
+  const { userId, postId, postUserId } = req.body;
+  console.log("postUserId:", postUserId)
   try {
+    console.log("postId:", postId)
+    console.log("userId:", userId)
     if (!userId) {
       return res.status(400).json({ sucess: false, message: "userId require" });
     }
@@ -196,6 +201,7 @@ exports.likePost = async function (req, res) {
     }
     const post = await postSchemaModel.findOne({ _id: postId });
 
+    console.log("post:", post)
     if (post) {
       const isLike = post?.likes?.includes(userId);
       if (!isLike) {
@@ -203,6 +209,21 @@ exports.likePost = async function (req, res) {
         like.push(userId);
         post.likes = like;
         const result = await postSchemaModel.updateOne({ _id: postId }, post);
+
+        console.log("notification:")
+        const getUserDetails = await userSchemaModel.findById(userId)
+        console.log("getUserDetails:", getUserDetails)
+        let _notificationObj = {
+          userId: userId,
+          postId: postId,
+          time: new Date(),
+          text: `${getUserDetails?.fullName} like your post`,
+          postUserId: postUserId
+        }
+        const notification = await notificationSchemaModel.create(_notificationObj)
+
+        console.log("notification:", notification)
+
         return res
           .status(200)
           .json({ sucess: true, message: "like succesfully", post });
@@ -211,6 +232,9 @@ exports.likePost = async function (req, res) {
         if (indexOfDislike !== -1) {
           post.likes.splice(indexOfDislike, 1);
           const result = await postSchemaModel.updateOne({ _id: postId }, post);
+          const notification = await notificationSchemaModel.findOneAndDelete({ userId: userId, postId: postId })
+          console.log("notification delete:", notification)
+
           return res
             .status(200)
             .json({ success: true, message: "Dislike successful", post });

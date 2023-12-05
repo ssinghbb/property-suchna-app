@@ -61,9 +61,11 @@ app.use(function (req, res, next) {
 app.use(express.static("post"));
 var userRoutes = require("./api/routes/userRoutes");
 var postRoutes = require("./api/routes/postRoutes");
+var notificationRoutes = require("./api/routes/notificationRoutes");
 
 userRoutes(app);
 postRoutes(app);
+notificationRoutes(app)
 
 
 app.use(function (req, res) {
