@@ -234,7 +234,7 @@ exports.sign_in = async function (req, res) {
         const url = await getSignedUrl(s3, command);   //we can also use expires in for security 
         console.log("url:", url)
 
-        user.url = url
+        // user.url = url
         console.log("user?.url:", user?.url)
         return res.status(200).json({
           success: true,
@@ -328,11 +328,7 @@ exports.updateUser = async function (req, res) {
     const url = await getSignedUrl(s3, command);   //we can also use expires in for security 
     console.log("url:", url)
     // console.log("ans:", ans)
-    if (ans) {
-
-      user.url = url;
-    }
-
+    user.url = url;
     // const result = await cloudinary.uploader.upload(uploadedFile.tempFilePath);
 
 
