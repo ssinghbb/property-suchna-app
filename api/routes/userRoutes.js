@@ -15,8 +15,8 @@ module.exports = function (app) {
         // .put(userHandlers.updateUser);
     app.route('/auth/verify')
         .post(userHandlers.verify);
-        app.route('/auth/send-whatsapp-message')
-        .post(userHandlers.whatsAppMessage);
+        // app.route('/auth/send-whatsapp-message')
+        // .post(userHandlers.whatsAppMessage);
     app.route('/testapi')
         .get(userHandlers.testapi);
 };
