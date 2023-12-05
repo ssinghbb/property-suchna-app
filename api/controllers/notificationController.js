@@ -22,7 +22,7 @@ exports.getNotifications = async function (req, res) {
     console.log("_data:", _data)
 
 
-    return res.status(200).json({ message: "Server is running...." });
+    return res.status(200).json(_data);
 };
 
 exports.addNotification = async function (req, res) {
