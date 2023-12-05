@@ -58,14 +58,16 @@ app.use(function (req, res, next) {
   }
   next();
 });
-app.use(express.static("post"));
+app.use("/images", express.static("post"));
 var userRoutes = require("./api/routes/userRoutes");
 var postRoutes = require("./api/routes/postRoutes");
+var commentRoutes = require("./api/routes/commentRoutes");
 var notificationRoutes = require("./api/routes/notificationRoutes");
 
 userRoutes(app);
 postRoutes(app);
-notificationRoutes(app)
+commentRoutes(app);
+notificationRoutes(app);
 
 
 app.use(function (req, res) {
