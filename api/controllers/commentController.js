@@ -5,12 +5,7 @@ const { log } = require("console");
 const { create } = require("../models/commentModel");
 const postSchemaModel = require("../models/postModel");
 const notificationSchemaModel = require("../models/notificationModel");
-var cloudinary = require("cloudinary").v2;
-cloudinary.config({
-  cloud_name: process.env.CLOUD_NAME,
-  api_key: process.env.API_KEY,
-  api_secret: process.env.API_SECREAT,
-});
+
 
 exports.addComment = async function (req, res) {
   const { postId, userId, comment } = req.body;
