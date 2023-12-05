@@ -113,6 +113,7 @@ exports.upload = async function (req, res) {
       return res.status(200).json({
         sucess: true,
         massage: "file uploaded susessfuly in database.....",
+        data:data
       });
     } else {
       return res
