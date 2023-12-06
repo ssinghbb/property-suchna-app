@@ -3,45 +3,40 @@ var mongoose = require("mongoose");
 var path = require("path");
 var UserSchema = require("../models/userModel");
 var postSchemaModel = require("../models/postModel");
-var notificationSchemaModel = require('../models/notificationModel')
-const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
+var notificationSchemaModel = require("../models/notificationModel");
+const {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} = require("@aws-sdk/client-s3");
 
-const crypto = require('crypto')
-const sharp = require('sharp')
+const crypto = require("crypto");
+const sharp = require("sharp");
 const userSchemaModel = require("../models/userModel");
 
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
-
-//aws s3 setup 
-const BUCKET_NAME = process.env.BUCKET_NAME
-const BUCKET_REGION = process.env.BUCKET_REGION
-const ACCESS_KEY = process.env.ACCESS_KEY
-const SECRET_ACCESS_KEY = process.env.SECRET_ACCESS_KEY
-const randomImageName = (bytes = 32) => crypto.randomBytes(bytes).toString('hex')
-
-
+//aws s3 setup
+const BUCKET_NAME = process.env.BUCKET_NAME;
+const BUCKET_REGION = process.env.BUCKET_REGION;
+const ACCESS_KEY = process.env.ACCESS_KEY;
+const SECRET_ACCESS_KEY = process.env.SECRET_ACCESS_KEY;
+const randomImageName = (bytes = 32) =>
+  crypto.randomBytes(bytes).toString("hex");
 
 const s3 = new S3Client({
   credentials: {
     accessKeyId: ACCESS_KEY,
-    secretAccessKey: SECRET_ACCESS_KEY
+    secretAccessKey: SECRET_ACCESS_KEY,
   },
-  region: BUCKET_REGION
-})
-
-
-
-
-
-
-
-
+  region: BUCKET_REGION,
+});
 
 exports.upload = async function (req, res) {
   const { userId, caption = "", userName, location, description } = req.body;
-  console.log("req.body:", req.body)
-  console.log("req.body:", req.file)
+  console.log("req.body:", req.body);
+  console.log("req.body:", req.file);
   // return res.send({})
   try {
     if (!userId) {
@@ -70,19 +65,21 @@ exports.upload = async function (req, res) {
     const isVideo = uploadedFile.mimetype.startsWith("video/");
 
     console.log("isVideo", isVideo);
-    const buffer = await sharp(req?.file?.buffer).resize({ height: 1920, width: 1080, fit: 'contain' }).toBuffer();
-    const imageName = randomImageName()
+    const buffer = await sharp(req?.file?.buffer)
+      .resize({ height: 1920, width: 1080, fit: "contain" })
+      .toBuffer();
+    const imageName = randomImageName();
     const params = {
       Bucket: BUCKET_NAME,
       Key: imageName,
       Body: buffer,
-      ContentType: req?.file?.mimetype
-    }
+      ContentType: req?.file?.mimetype,
+    };
 
-    const rr = new PutObjectCommand(params)
-    console.log("rr:", rr)
-    const ans = await s3.send(rr)
-    console.log("ans:", ans)
+    const rr = new PutObjectCommand(params);
+    console.log("rr:", rr);
+    const ans = await s3.send(rr);
+    console.log("ans:", ans);
 
     // const result = await cloudinary.uploader.upload(uploadedFile.tempFilePath, {
     //   resource_type: isVideo ? "video" : "image",
@@ -105,15 +102,14 @@ exports.upload = async function (req, res) {
     const addPost = await postSchemaModel.create(data);
     console.log("data", addPost);
     if (addPost) {
-      let _updatePostCount = await userDetails.updateOne(
-
-        { $inc: { postCount: 1 } }
-      )
-      console.log("_updatePostCount:", _updatePostCount)
+      let _updatePostCount = await userDetails.updateOne({
+        $inc: { postCount: 1 },
+      });
+      console.log("_updatePostCount:", _updatePostCount);
       return res.status(200).json({
         sucess: true,
         massage: "file uploaded susessfuly in database.....",
-        data:data
+        data: data,
       });
     } else {
       return res
@@ -126,7 +122,6 @@ exports.upload = async function (req, res) {
       .json({ sucess: false, massage: "server error", data: error });
   }
 };
-
 
 exports.postDelete = async function (req, res) {
   console.log("reqqqqq", req);
@@ -146,11 +141,11 @@ exports.postDelete = async function (req, res) {
     console.log("existingpost", existingpost);
     const params = {
       Bucket: BUCKET_NAME,
-      Key: existingpost?.url
-    }
-    const cmd = new DeleteObjectCommand(params)
+      Key: existingpost?.url,
+    };
+    const cmd = new DeleteObjectCommand(params);
     // console.log("cmd:", cmd)
-    const _del = await s3.send(cmd)
+    const _del = await s3.send(cmd);
     // console.log("_del:", _del)
     if (!existingpost) {
       return res
@@ -165,7 +160,6 @@ exports.postDelete = async function (req, res) {
         message: "Unauthorized: Post does not belong to the user.",
       });
     }
-
 
     const deletePost = await postSchemaModel.findByIdAndDelete(postId);
 
@@ -185,14 +179,13 @@ exports.postDelete = async function (req, res) {
   }
 };
 
-
 exports.likePost = async function (req, res) {
-  console.log("likePost:")
+  console.log("likePost:");
   const { userId, postId, postUserId } = req.body;
-  console.log("postUserId:", postUserId)
+  console.log("postUserId:", postUserId);
   try {
-    console.log("postId:", postId)
-    console.log("userId:", userId)
+    console.log("postId:", postId);
+    console.log("userId:", userId);
     if (!userId) {
       return res.status(400).json({ sucess: false, message: "userId require" });
     }
@@ -202,7 +195,7 @@ exports.likePost = async function (req, res) {
     }
     const post = await postSchemaModel.findOne({ _id: postId });
 
-    console.log("post:", post)
+    console.log("post:", post);
     if (post) {
       const isLike = post?.likes?.includes(userId);
       if (!isLike) {
@@ -211,19 +204,21 @@ exports.likePost = async function (req, res) {
         post.likes = like;
         const result = await postSchemaModel.updateOne({ _id: postId }, post);
 
-        console.log("notification:")
-        const getUserDetails = await userSchemaModel.findById(userId)
-        console.log("getUserDetails:", getUserDetails)
+        console.log("notification:");
+        const getUserDetails = await userSchemaModel.findById(userId);
+        console.log("getUserDetails:", getUserDetails);
         let _notificationObj = {
           userId: userId,
           postId: postId,
           time: new Date(),
           text: `${getUserDetails?.fullName} like your post`,
-          postUserId: postUserId
-        }
-        const notification = await notificationSchemaModel.create(_notificationObj)
+          postUserId: postUserId,
+        };
+        const notification = await notificationSchemaModel.create(
+          _notificationObj
+        );
 
-        console.log("notification:", notification)
+        console.log("notification:", notification);
 
         return res
           .status(200)
@@ -233,8 +228,11 @@ exports.likePost = async function (req, res) {
         if (indexOfDislike !== -1) {
           post.likes.splice(indexOfDislike, 1);
           const result = await postSchemaModel.updateOne({ _id: postId }, post);
-          const notification = await notificationSchemaModel.findOneAndDelete({ userId: userId, postId: postId })
-          console.log("notification delete:", notification)
+          const notification = await notificationSchemaModel.findOneAndDelete({
+            userId: userId,
+            postId: postId,
+          });
+          console.log("notification delete:", notification);
 
           return res
             .status(200)
@@ -298,19 +296,18 @@ exports.getAllPost = async function (req, res) {
 
     const posts = (await postSchemaModel.find({ type: "image" })).reverse();
     for (const post of posts) {
-
       const getObjectParams = {
         Bucket: BUCKET_NAME,
-        Key: post.url  //imageName
-      }
+        Key: post.url, //imageName
+      };
       const command = new GetObjectCommand(getObjectParams);
-      const url = await getSignedUrl(s3, command);   //we can also use expires in for security 
-      post.url = url
+      const url = await getSignedUrl(s3, command); //we can also use expires in for security
+      post.url = url;
     }
     // console.log("data:", data);
     // console.log("resulthdijl", result);
     const data = posts.slice(startIndex, endIndex);
-    console.log("data:", data)
+    console.log("data:", data);
     res.status(200).json({
       sucess: true,
       message: "post get successfuly",
@@ -425,5 +422,30 @@ exports.getComments = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "server erroe", error });
+  }
+};
+
+exports.getUserPost = async (req, res) => {
+  console.log("req",req);
+  const userId =req.params.userId;
+  try {
+    if (!userId) {
+      return res
+        .status(404)
+        .json({ success: false, message: "userId require" });
+    }
+    const posts = await postSchemaModel.find({ userId: userId });
+    if (!posts || posts.lenght == 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "no posts found for this user" });
+    }
+    return res
+      .status(200)
+      .json({ success: true, message: "post retrieved sucessfully" ,posts});
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "server error", error });
   }
 };

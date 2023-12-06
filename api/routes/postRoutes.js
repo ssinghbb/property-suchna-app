@@ -12,7 +12,7 @@ module.exports = function (app) {
   app.route("/post/likes/:_id").get(postController.getPostLikes);
   app.route("/post/allpost").get(postController.getAllPost);
   app.route("/post/allreel").get(postController.getAllReels);
-  //app.route("/post/comment").post(postController.addComment);
+  app.route("/post/userpost/:userId").get(postController.getUserPost);
   //app.route("/post/comments/:postId").get(postController.getComments);
   // app.route("/post/comment/like").put(commentController.likeComments);
   //  app.route("/post/delete/:commentId").delete(commentController.deleteComment);
