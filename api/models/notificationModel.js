@@ -1,43 +1,43 @@
-'use strict';
+"use strict";
 
-var mongoose = require('mongoose'),
-  bcrypt = require('bcrypt'),
+var mongoose = require("mongoose"),
+  bcrypt = require("bcrypt"),
   Schema = mongoose.Schema;
+const { ObjectId } = mongoose.Schema.Types;
 
 /**
  * User Schema
  */
 var NotificationSchema = new Schema({
-  // fullName: {
-  //   type: String,
-  //   trim: true,
-  //   required: true
-  // },
-  // url: {
-  //   type: String,
-  //   trim: true,
-  // },
   userId: {
-    type: String,
-  }
-  ,
+    type: ObjectId,
+  },
   postId: {
-    type: String,
+    type: ObjectId,
+  },
+  commentUserId: {
+    type: ObjectId,
   },
   comment: {
-    type: String
-  }
-  , text: {
-    type: String
+    type: String,
   },
-  postUserId: {
-    type: String
-  }
+
+  isComment: {
+    type: Boolean,  
+    default: true,  
+  },
+  isLike: {
+    type: Boolean,  
+    default: false,
+  },
+  notificationDate: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
-// UserSchema.methods.comparePassword = function (password) {
-//   return bcrypt.compareSync(password, this.hash_password);
-// };
-
-const NotificationsSchemaModel = mongoose.model('Notifications', NotificationSchema);
+const NotificationsSchemaModel = mongoose.model(
+  "Notifications",
+  NotificationSchema
+);
 module.exports = NotificationsSchemaModel;
