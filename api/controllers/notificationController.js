@@ -61,6 +61,8 @@ exports.getNotifications = async function (req, res) {
       }
       
     ]);
+    // const postIds = notifications.map(notification => notification.postId);
+    // console.log("postIds", postIds);
     console.log("notifications", notifications);
     res
       .status(200)

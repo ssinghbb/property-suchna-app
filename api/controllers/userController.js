@@ -438,6 +438,7 @@ exports.updateUser = async function (req, res) {
       message: "User updated successfully",
       data: updatedUser,
     });
+    
   } catch (error) {
     return res
       .status(500)
