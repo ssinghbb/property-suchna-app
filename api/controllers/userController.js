@@ -2,10 +2,15 @@
 
 const { decrypt } = require("dotenv");
 const userSchemaModel = require("../models/userModel");
-const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
+const {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} = require("@aws-sdk/client-s3");
 
-const crypto = require('crypto')
-const sharp = require('sharp')
+const crypto = require("crypto");
+const sharp = require("sharp");
 
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
@@ -20,22 +25,21 @@ const client = require("twilio")(
   process.env.AUTH_TOKEN
 );
 
+const randomImageName = (bytes = 32) =>
+  crypto.randomBytes(bytes).toString("hex");
 
-const randomImageName = (bytes = 32) => crypto.randomBytes(bytes).toString('hex')
-
-const BUCKET_NAME = process.env.BUCKET_NAME
-const BUCKET_REGION = process.env.BUCKET_REGION
-const ACCESS_KEY = process.env.ACCESS_KEY
-const SECRET_ACCESS_KEY = process.env.SECRET_ACCESS_KEY
+const BUCKET_NAME = process.env.BUCKET_NAME;
+const BUCKET_REGION = process.env.BUCKET_REGION;
+const ACCESS_KEY = process.env.ACCESS_KEY;
+const SECRET_ACCESS_KEY = process.env.SECRET_ACCESS_KEY;
 
 const s3 = new S3Client({
   credentials: {
     accessKeyId: ACCESS_KEY,
-    secretAccessKey: SECRET_ACCESS_KEY
+    secretAccessKey: SECRET_ACCESS_KEY,
   },
-  region: BUCKET_REGION
-})
-
+  region: BUCKET_REGION,
+});
 
 //user register
 exports.register = async function (req, res) {
@@ -227,15 +231,15 @@ exports.sign_in = async function (req, res) {
         );
         const getObjectParams = {
           Bucket: BUCKET_NAME,
-          Key: user?.url  //imageName
-        }
+          Key: user?.url, //imageName
+        };
         const command = new GetObjectCommand(getObjectParams);
-        console.log("command:", command)
-        const url = await getSignedUrl(s3, command);   //we can also use expires in for security 
-        console.log("url:", url)
+        console.log("command:", command);
+        const url = await getSignedUrl(s3, command); //we can also use expires in for security
+        console.log("url:", url);
 
         // user.url = url
-        console.log("user?.url:", user?.url)
+        console.log("user?.url:", user?.url);
         return res.status(200).json({
           success: true,
           message: "login successfully",
@@ -275,15 +279,102 @@ exports.profile = function (req, res, next) {
   }
 };
 
+// exports.updateUser = async function (req, res) {
+//   console.log("req", req);
+//   // console.log("Request body:", req?.files?.file);
+
+//   const { fullName, bio, userId } = req?.body;
+//   // const _id = req?.params?._id;
+
+//   console.log("userId", userId);
+//   console.log("fullname", fullName, bio, userId);
+
+//   try {
+//     if (!userId) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "userId not found" });
+//     }
+
+//     const user = await userSchemaModel.findById(userId);
+//     console.log("user", user);
+
+//     if (!user) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "User not found" });
+//     }
+//     const uploadedFile = req?.file;
+//     console.log("upladfile", uploadedFile);
+
+//     const buffer = await sharp(req?.file?.buffer)
+//       .resize({ height: 1920, width: 1080, fit: "contain" })
+//       .toBuffer();
+
+//     console.log("buffer", buffer);
+
+//     const imageName = randomImageName();
+//     const params = {
+//       Bucket: BUCKET_NAME,
+//       Key: imageName,
+//       Body: buffer,
+//       ContentType: req?.file?.mimetype,
+//     };
+
+//     const rr = new PutObjectCommand(params);
+//     console.log("rr:", rr);
+//     const ans = await s3.send(rr);
+//     console.log("ans",ans);
+
+//     const getObjectParams = {
+//       Bucket: BUCKET_NAME,
+//       Key: user.url, //imageName
+//     };
+//     const command = new GetObjectCommand(getObjectParams);
+//     console.log("command:", command);
+//     const url = await getSignedUrl(s3, command); //we can also use expires in for security
+//     console.log("url:", url);
+//     // console.log("ans:", ans)
+//     user.url = url;
+
+//     // const result = await cloudinary.uploader.upload(uploadedFile.tempFilePath);
+
+//     if (req.body.fullName) {
+//       user.fullName = req.body.fullName;
+//     }
+
+//     // if (req.body.phoneNumber) {
+//     //   user.phoneNumber = req.body.phoneNumber;
+//     // }
+
+//     if (req.body.bio) {
+//       user.bio = req.body.bio;
+//     }
+
+//     const updatedUser = await user.save();
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "User updated successfully",
+//       data: updatedUser,
+//     });
+//   } catch (error) {
+//     return res
+//       .status(500)
+//       .json({ success: false, message: "Server error", error });
+//   }
+// };
+
+
+
 exports.updateUser = async function (req, res) {
   console.log("req", req);
-  // console.log("Request body:", req?.files?.file);
+  console.log("Request body:", req?.file);
 
-  const { fullName, bio, userId } = req?.body;
-  // const _id = req?.params?._id;
+  const { fullName, phoneNumber, bio, userId } = req?.body;
 
   console.log("userId", userId);
-  console.log("fullname", fullName, bio, userId);
+  console.log("fullname", fullName, phoneNumber, bio, userId);
 
   try {
     if (!userId) {
@@ -293,58 +384,54 @@ exports.updateUser = async function (req, res) {
     }
 
     const user = await userSchemaModel.findById(userId);
-    console.log("user", user);
 
     if (!user) {
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
     }
+
     const uploadedFile = req?.file;
-    const buffer = await sharp(req?.file?.buffer).resize({ height: 1920, width: 1080, fit: 'contain' }).toBuffer();
 
+    console.log("uploadedFile", uploadedFile);
 
-
-    console.log("upladfile", uploadedFile);
-
-    const imageName = randomImageName()
+    const buffer = await sharp(uploadedFile.buffer)
+      .resize({ height: 1920, width: 1080, fit: "contain" })
+      .toBuffer();
+    const imageName = randomImageName();
     const params = {
       Bucket: BUCKET_NAME,
       Key: imageName,
       Body: buffer,
-      ContentType: req?.file?.mimetype
-    }
+      ContentType: uploadedFile.mimetype,
+    };
 
-    const rr = new PutObjectCommand(params)
-    console.log("rr:", rr)
-    const ans = await s3.send(rr)
+    const putObjectCommand = new PutObjectCommand(params);
+    await s3.send(putObjectCommand);
 
     const getObjectParams = {
       Bucket: BUCKET_NAME,
-      Key: imageName  //imageName
-    }
-    const command = new GetObjectCommand(getObjectParams);
-    console.log("command:", command)
-    const url = await getSignedUrl(s3, command);   //we can also use expires in for security 
-    console.log("url:", url)
-    // console.log("ans:", ans)
+      Key: imageName,
+    };
+    const getObjectCommand = new GetObjectCommand(getObjectParams);
+    const url = await getSignedUrl(s3, getObjectCommand);
+
     user.url = url;
-    // const result = await cloudinary.uploader.upload(uploadedFile.tempFilePath);
 
-
-    if (req.body.fullName) {
-      user.fullName = req.body.fullName;
+    if (fullName) {
+      user.fullName = fullName;
     }
 
-    // if (req.body.phoneNumber) {
-    //   user.phoneNumber = req.body.phoneNumber;
-    // }
+    if (phoneNumber) {
+      user.phoneNumber = phoneNumber;
+    }
 
-    if (req.body.bio) {
-      user.bio = req.body.bio;
+    if (bio) {
+      user.bio = bio;
     }
 
     const updatedUser = await user.save();
+    console.log("updatedUser", updatedUser);
 
     return res.status(200).json({
       success: true,
@@ -357,32 +444,3 @@ exports.updateUser = async function (req, res) {
       .json({ success: false, message: "Server error", error });
   }
 };
-
-
-
-
-// exports.whatsAppMessage = async function (req, res) {
-//   const { Location, Name, Description, Queries } = req.body;
-//   console.log("Location", Location);
-//   console.log("Name", Name);
-//   console.log("Description", Description);
-
-//   console.log("Queries", Queries);
-
-//   try {
-//     client.messages
-//       .create({
-//         body: `\nLocation: ${Location},\nUsername: ${Name},\nDescription: ${Description},\nQuery: ${Queries}`,
-//         from: "whatsapp:+14155238886",
-//         to: "whatsapp:+918319453618",
-//       })
-//       .then((message) => console.log("message send successfully"));
-//     return res
-//       .status(200)
-//       .json({ success: true, message: "message send successfully" });
-//   } catch (error) {
-//     return res
-//       .status(500)
-//       .json({ success: false, message: "server error", error });
-//   }
-// };

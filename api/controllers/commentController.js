@@ -6,7 +6,6 @@ const { create } = require("../models/commentModel");
 const postSchemaModel = require("../models/postModel");
 const notificationSchemaModel = require("../models/notificationModel");
 
-
 exports.addComment = async function (req, res) {
   const { postId, userId, comment } = req.body;
   try {
@@ -20,14 +19,13 @@ exports.addComment = async function (req, res) {
         .status(400)
         .json({ success: false, message: "userId required" });
     }
-    console.log("Provided postId:", postId);
 
-    const post=await postSchemaModel.findById(postId);
+    const post = await postSchemaModel.findById(postId);
 
-    if(!post){
+    if (!post) {
       return res
         .status(400)
-        .json({ success: false, message: "POst has been deleted" });
+        .json({ success: false, message: "Post has been deleted" });
     }
 
     if (!comment) {
@@ -43,18 +41,17 @@ exports.addComment = async function (req, res) {
       like: [],
     });
     if (result) {
-
-      const response= await notificationSchemaModel.create({
-        userId:post.userId,
-        from:userId,
-        isComment:true,
-        comment:comment,
+      const response = await notificationSchemaModel.create({
+        userId: post?.userId,
+        commentUserId: userId,
+        isComment: true,
+        comment: comment,
         postId,
-      })
+      });
 
       return res.status(200).json({
         success: true,
-        message: "Comment added  successfully to collection",
+        message: "Comment added  successfully",
         data: result,
       });
     } else {
@@ -69,7 +66,6 @@ exports.addComment = async function (req, res) {
   }
 };
 
-
 exports.getComments = async (req, res) => {
   const { postId } = req.params;
   console.log("postId", postId);
@@ -79,17 +75,15 @@ exports.getComments = async (req, res) => {
         .status(404)
         .json({ success: false, message: "postId require" });
     }
-    const result = (await commentSchemaModel.find({postId})).reverse();
+    const result = (await commentSchemaModel.find({ postId })).reverse();
     console.log(" get comment result", result);
 
     if (result) {
-      return res
-        .status(200)
-        .json({
-          success: true,
-          message: "comment get successfully",
-          data: result,
-        });
+      return res.status(200).json({
+        success: true,
+        message: "comment get successfully",
+        data: result,
+      });
     } else {
       return res
         .status(404)
@@ -101,6 +95,3 @@ exports.getComments = async (req, res) => {
       .json({ success: false, message: "server erroe", error });
   }
 };
-
-
-
