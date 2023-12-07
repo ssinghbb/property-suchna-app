@@ -425,27 +425,84 @@ exports.getComments = async (req, res) => {
   }
 };
 
+// exports.getUserPost = async (req, res) => {
+//   console.log("req",req);
+//   const userId =req.params.userId;
+//   try {
+//     if (!userId) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "userId require" });
+//     }
+//     const posts = await postSchemaModel.find({ userId: userId });
+//     if (!posts || posts.lenght == 0) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "no posts found for this user" });
+//     }
+//     return res
+//       .status(200)
+//       .json({ success: true, message: "post retrieved sucessfully" ,posts});
+//   } catch (error) {
+//     return res
+//       .status(500)
+//       .json({ success: false, message: "server error", error });
+//   }
+// };
+
+
 exports.getUserPost = async (req, res) => {
-  console.log("req",req);
-  const userId =req.params.userId;
-  try {
-    if (!userId) {
+    console.log("req",req);
+    const userId =req.params.userId;
+    console.log("req",userId);
+  
+    try {
+      if (!userId) {
+        return res
+          .status(404)
+          .json({ success: false, message: "userId require" });
+      }
+    //   const posts = await postSchemaModel.aggregate([
+    //     {
+    //       $lookup: {
+    //         from: "users",
+    //         localField: "userId",
+    //         foreignField: "_id",
+    //         as: "user"
+    //       },
+    //     },
+    //     {
+    //       $unwind: "$user"
+    //     },
+    //     // Other stages or operations as needed
+    //   ]);
+      const posts = await postSchemaModel.find({ userId: userId })
+      console.log("post",posts);
+      if (!posts || posts.lenght == 0) {
+        return res
+          .status(404)
+          .json({ success: false, message: "no posts found for this user" });
+      }
+           
+      for (const post of posts) {
+        const getObjectParams = {
+          Bucket: BUCKET_NAME,
+          Key: post.url, //imageName
+        };
+        const command = new GetObjectCommand(getObjectParams);
+        const url = await getSignedUrl(s3, command); //we can also use expires in for security
+        post.url = url;
+      }
+      // console.log("data:", data);
+      // console.log("resulthdijl", result);
+      //const data = posts.slice(startIndex, endIndex);
+      //console.log("data:", data);
       return res
-        .status(404)
-        .json({ success: false, message: "userId require" });
-    }
-    const posts = await postSchemaModel.find({ userId: userId });
-    if (!posts || posts.lenght == 0) {
+        .status(200)
+        .json({ success: true, message: "post retrieved sucessfully" ,posts});
+    } catch (error) {
       return res
-        .status(404)
-        .json({ success: false, message: "no posts found for this user" });
+        .status(500)
+        .json({ success: false, message: "server error", error });
     }
-    return res
-      .status(200)
-      .json({ success: true, message: "post retrieved sucessfully" ,posts});
-  } catch (error) {
-    return res
-      .status(500)
-      .json({ success: false, message: "server error", error });
-  }
-};
+  };
