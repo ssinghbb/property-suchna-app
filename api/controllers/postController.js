@@ -300,8 +300,10 @@ exports.getAllPost = async function (req, res) {
         Bucket: BUCKET_NAME,
         Key: post.url, //imageName
       };
+
+       const expiresInSeconds = 4 * 24 * 60 * 60;
       const command = new GetObjectCommand(getObjectParams);
-      const url = await getSignedUrl(s3, command); //we can also use expires in for security
+      const url = await getSignedUrl(s3, command ,{expiresIn:expiresInSeconds }); //we can also use expires in for security
       post.url = url;
     }
     // console.log("data:", data);
@@ -425,37 +427,9 @@ exports.getComments = async (req, res) => {
   }
 };
 
-// exports.getUserPost = async (req, res) => {
-//   console.log("req",req);
-//   const userId =req.params.userId;
-//   try {
-//     if (!userId) {
-//       return res
-//         .status(404)
-//         .json({ success: false, message: "userId require" });
-//     }
-//     const posts = await postSchemaModel.find({ userId: userId });
-//     if (!posts || posts.lenght == 0) {
-//       return res
-//         .status(404)
-//         .json({ success: false, message: "no posts found for this user" });
-//     }
-//     return res
-//       .status(200)
-//       .json({ success: true, message: "post retrieved sucessfully" ,posts});
-//   } catch (error) {
-//     return res
-//       .status(500)
-//       .json({ success: false, message: "server error", error });
-//   }
-// };
-
 
 exports.getUserPost = async (req, res) => {
-    console.log("req",req);
     const userId =req.params.userId;
-    console.log("req",userId);
-  
     try {
       if (!userId) {
         return res
@@ -476,7 +450,7 @@ exports.getUserPost = async (req, res) => {
     //     },
     //     // Other stages or operations as needed
     //   ]);
-      const posts = await postSchemaModel.find({ userId: userId })
+      const posts = (await postSchemaModel.find({ userId: userId })).reverse()
       console.log("post",posts);
       if (!posts || posts.lenght == 0) {
         return res
@@ -487,16 +461,15 @@ exports.getUserPost = async (req, res) => {
       for (const post of posts) {
         const getObjectParams = {
           Bucket: BUCKET_NAME,
-          Key: post.url, //imageName
+          Key: post.url, 
         };
+
+        const expiresInSeconds = 4 * 24 * 60 * 60;
+
         const command = new GetObjectCommand(getObjectParams);
-        const url = await getSignedUrl(s3, command); //we can also use expires in for security
+        const url = await getSignedUrl(s3, command,{ expiresIn:expiresInSeconds }); //we can also use expires in for security
         post.url = url;
       }
-      // console.log("data:", data);
-      // console.log("resulthdijl", result);
-      //const data = posts.slice(startIndex, endIndex);
-      //console.log("data:", data);
       return res
         .status(200)
         .json({ success: true, message: "post retrieved sucessfully" ,posts});
@@ -505,4 +478,4 @@ exports.getUserPost = async (req, res) => {
         .status(500)
         .json({ success: false, message: "server error", error });
     }
-  };
+};
