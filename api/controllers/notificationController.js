@@ -57,9 +57,9 @@ exports.getNotifications = async function (req, res) {
         $unwind: "$user",
       },
       {
-        $sort: { notificationDate: -1 } 
+        $sort: { notificationDate: -1 }
       }
-      
+
     ]);
     // const postIds = notifications.map(notification => notification.postId);
     // console.log("postIds", postIds);
@@ -75,3 +75,4 @@ exports.getNotifications = async function (req, res) {
     res.status(500).json({ success: false, message: "Server error", error });
   }
 };
+

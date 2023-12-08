@@ -41,13 +41,15 @@ exports.addComment = async function (req, res) {
       like: [],
     });
     if (result) {
+      if(userId !== post?.userId){
       const response = await notificationSchemaModel.create({
         userId: post?.userId,
         commentUserId: userId,
         isComment: true,
         comment: comment,
         postId,
-      });
+      })
+      };
 
       return res.status(200).json({
         success: true,
