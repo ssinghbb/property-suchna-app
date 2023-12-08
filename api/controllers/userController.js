@@ -413,8 +413,11 @@ exports.updateUser = async function (req, res) {
       Bucket: BUCKET_NAME,
       Key: imageName,
     };
+
+    const expiresInSeconds = 4 * 24 * 60 * 60;
+
     const getObjectCommand = new GetObjectCommand(getObjectParams);
-    const url = await getSignedUrl(s3, getObjectCommand);
+    const url = await getSignedUrl(s3, getObjectCommand,{expiresIn:expiresInSeconds});
 
     user.url = url;
 
