@@ -180,11 +180,8 @@ exports.postDelete = async function (req, res) {
 };
 
 exports.likePost = async function (req, res) {
-  console.log("likePost:");
-  const { userId, postId, postUserId } = req.body;
-  console.log("postUserId:", postUserId);
+const { userId, postId, postUserId } = req.body;
   try {
-    console.log("postId:", postId);
     console.log("userId:", userId);
     if (!userId) {
       return res.status(400).json({ sucess: false, message: "userId require" });
@@ -207,15 +204,16 @@ exports.likePost = async function (req, res) {
         console.log("notification:");
         const getUserDetails = await userSchemaModel.findById(userId);
         console.log("getUserDetails:", getUserDetails);
-        let _notificationObj = {
-          userId: userId,
+        let notificationObj = {
+          userId: postUserId,
           postId: postId,
-          time: new Date(),
-          text: `${getUserDetails?.fullName} like your post`,
-          postUserId: postUserId,
+          // time: new Date(),
+          comment: `${getUserDetails?.fullName} like your post`,
+          commentUserId: userId,
+          isLike:true,
         };
         const notification = await notificationSchemaModel.create(
-          _notificationObj
+          notificationObj
         );
 
         console.log("notification:", notification);
@@ -229,8 +227,9 @@ exports.likePost = async function (req, res) {
           post.likes.splice(indexOfDislike, 1);
           const result = await postSchemaModel.updateOne({ _id: postId }, post);
           const notification = await notificationSchemaModel.findOneAndDelete({
-            userId: userId,
-            postId: postId,
+            // userId: userId,
+          commentUserId: userId,
+          postId: postId,
           });
           console.log("notification delete:", notification);
 
@@ -303,7 +302,9 @@ exports.getAllPost = async function (req, res) {
 
       const expiresInSeconds = 4 * 24 * 60 * 60;
       const command = new GetObjectCommand(getObjectParams);
-      const url = await getSignedUrl(s3, command ,{expiresIn:expiresInSeconds }); //we can also use expires in for security
+      const url = await getSignedUrl(s3, command, {
+        expiresIn: expiresInSeconds,
+      }); //we can also use expires in for security
       post.url = url;
     }
     // console.log("data:", data);
@@ -427,15 +428,14 @@ exports.getComments = async (req, res) => {
   }
 };
 
-
 exports.getUserPost = async (req, res) => {
-    const userId =req.params.userId;
-    try {
-      if (!userId) {
-        return res
-          .status(404)
-          .json({ success: false, message: "userId require" });
-      }
+  const userId = req.params.userId;
+  try {
+    if (!userId) {
+      return res
+        .status(404)
+        .json({ success: false, message: "userId require" });
+    }
     //   const posts = await postSchemaModel.aggregate([
     //     {
     //       $lookup: {
@@ -450,32 +450,34 @@ exports.getUserPost = async (req, res) => {
     //     },
     //     // Other stages or operations as needed
     //   ]);
-      const posts = (await postSchemaModel.find({ userId: userId })).reverse()
-      console.log("post",posts);
-      if (!posts || posts.lenght == 0) {
-        return res
-          .status(404)
-          .json({ success: false, message: "no posts found for this user" });
-      }
-           
-      for (const post of posts) {
-        const getObjectParams = {
-          Bucket: BUCKET_NAME,
-          Key: post.url, 
-        };
-
-        const expiresInSeconds = 4 * 24 * 60 * 60;
-
-        const command = new GetObjectCommand(getObjectParams);
-        const url = await getSignedUrl(s3, command,{ expiresIn:expiresInSeconds }); //we can also use expires in for security
-        post.url = url;
-      }
+    const posts = (await postSchemaModel.find({ userId: userId })).reverse();
+    console.log("post", posts);
+    if (!posts || posts.lenght == 0) {
       return res
-        .status(200)
-        .json({ success: true, message: "post retrieved sucessfully" ,posts});
-    } catch (error) {
-      return res
-        .status(500)
-        .json({ success: false, message: "server error", error });
+        .status(404)
+        .json({ success: false, message: "no posts found for this user" });
     }
+
+    for (const post of posts) {
+      const getObjectParams = {
+        Bucket: BUCKET_NAME,
+        Key: post.url,
+      };
+
+      const expiresInSeconds = 4 * 24 * 60 * 60;
+
+      const command = new GetObjectCommand(getObjectParams);
+      const url = await getSignedUrl(s3, command, {
+        expiresIn: expiresInSeconds,
+      }); //we can also use expires in for security
+      post.url = url;
+    }
+    return res
+      .status(200)
+      .json({ success: true, message: "post retrieved sucessfully", posts });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "server error", error });
+  }
 };
