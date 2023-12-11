@@ -6,6 +6,7 @@ const { create } = require("../models/commentModel");
 const postSchemaModel = require("../models/postModel");
 const notificationSchemaModel = require("../models/notificationModel");
 const { equal } = require("assert");
+const userSchemaModel = require("../models/userModel");
 
 exports.addComment = async function (req, res) {
   const { postId, userId, comment } = req.body;
@@ -34,7 +35,7 @@ exports.addComment = async function (req, res) {
         .status(400)
         .json({ success: false, message: "comment required" });
     }
-
+    
     const result = await commentSchemaModel.create({
       postId,
       userId,
@@ -42,6 +43,8 @@ exports.addComment = async function (req, res) {
       like: [],
     });
 
+    const user = await userSchemaModel.findById(userId);
+    console.log("user",user);
     if (result) {
       if(!post?.userId.equals(userId)){
       const response = await notificationSchemaModel.create({
@@ -50,6 +53,7 @@ exports.addComment = async function (req, res) {
         isComment: true,
         comment: comment,
         postId,
+        fullName: user?.fullName
       })
       };
       return res.status(200).json({
