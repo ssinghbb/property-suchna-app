@@ -52,7 +52,6 @@ exports.addComment = async function (req, res) {
         postId,
       })
       };
-
       return res.status(200).json({
         success: true,
         message: "Comment added  successfully",
