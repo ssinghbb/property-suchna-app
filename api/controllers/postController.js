@@ -201,6 +201,8 @@ const { userId, postId, postUserId } = req.body;
         post.likes = like;
         const result = await postSchemaModel.updateOne({ _id: postId }, post);
 
+
+
         console.log("notification:");
         const getUserDetails = await userSchemaModel.findById(userId);
         console.log("getUserDetails:", getUserDetails);
@@ -211,6 +213,7 @@ const { userId, postId, postUserId } = req.body;
           comment: `${getUserDetails?.fullName} like your post`,
           commentUserId: userId,
           isLike:true,
+          fullName: getUserDetails?.fullName,
         };
         const notification = await notificationSchemaModel.create(
           notificationObj
