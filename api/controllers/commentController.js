@@ -44,7 +44,7 @@ exports.addComment = async function (req, res) {
     });
 
     const user = await userSchemaModel.findById(userId);
-    console.log("user",user);
+    
     if (result) {
       if(!post?.userId.equals(userId)){
       const response = await notificationSchemaModel.create({
