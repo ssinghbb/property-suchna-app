@@ -5,6 +5,7 @@ const { log } = require("console");
 const { create } = require("../models/commentModel");
 const postSchemaModel = require("../models/postModel");
 const notificationSchemaModel = require("../models/notificationModel");
+const { equal } = require("assert");
 
 exports.addComment = async function (req, res) {
   const { postId, userId, comment } = req.body;
@@ -40,8 +41,9 @@ exports.addComment = async function (req, res) {
       comment,
       like: [],
     });
+
     if (result) {
-      if(userId !== post?.userId){
+      if(!post?.userId.equals(userId)){
       const response = await notificationSchemaModel.create({
         userId: post?.userId,
         commentUserId: userId,

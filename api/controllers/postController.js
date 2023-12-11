@@ -301,7 +301,7 @@ exports.getAllPost = async function (req, res) {
         Key: post.url, //imageName
       };
 
-       const expiresInSeconds = 4 * 24 * 60 * 60;
+      const expiresInSeconds = 4 * 24 * 60 * 60;
       const command = new GetObjectCommand(getObjectParams);
       const url = await getSignedUrl(s3, command ,{expiresIn:expiresInSeconds }); //we can also use expires in for security
       post.url = url;
