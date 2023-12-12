@@ -27,7 +27,7 @@ var NotificationSchema = new Schema({
 
   isComment: {
     type: Boolean,  
-    default: true,  
+    default: false,  
   },
   isLike: {
     type: Boolean,  
