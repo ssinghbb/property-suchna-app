@@ -284,8 +284,8 @@ exports.likePost = async function (req, res) {
   }
 };
 
+
 exports.getPostLikes = async function (req, res) {
- 
   console.log("req.params", req.params);
   const _id = req.params._id;
   console.log("postId", _id);
@@ -345,13 +345,13 @@ exports.getAllPost = async function (req, res) {
       }); //we can also use expires in for security
       post.url = url;
     }
+    
     // console.log("data:", data);
     // console.log("resulthdijl", result);
     const data = posts.slice(startIndex, endIndex);
     console.log(
       "data with time:",
-      data,
-      startTime.toLocaleTimeString(undefined, { second: "numeric" })
+      data
     );
     res.status(200).json({
       sucess: true,
