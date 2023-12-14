@@ -400,6 +400,7 @@ exports.getUserPost = async (req, res) => {
     //     },
     //     // Other stages or operations as needed
     //   ]);
+
     const posts = (await postSchemaModel.find({ userId: userId })).reverse();
     console.log("post", posts);
     if (!posts || posts.lenght == 0) {
@@ -407,7 +408,6 @@ exports.getUserPost = async (req, res) => {
         .status(404)
         .json({ success: false, message: "no posts found for this user" });
     }
-
     for (const post of posts) {
       const getObjectParams = {
         Bucket: BUCKET_NAME,
