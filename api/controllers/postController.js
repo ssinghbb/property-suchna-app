@@ -35,7 +35,7 @@ const s3 = new S3Client({
 
 exports.upload = async function (req, res) {
   
-  console.log( "Start Time:",new Date().toLocaleTimeString() );
+  console.log( "Start Time:=",new Date().toLocaleTimeString() );
 
   const { userId, caption = "", userName, location, description } = req.body;
   console.log("req.body:", req.body);
