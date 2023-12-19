@@ -34,26 +34,18 @@ const s3 = new S3Client({
 });
 
 exports.upload = async function (req, res) {
-  
-  console.log( "Start Time:=",new Date().toLocaleTimeString() );
-
+  console.log("Start Time:=", new Date().toLocaleTimeString());
   const { userId, caption = "", userName, location, description } = req.body;
-  console.log("req.body:", req.body);
-  console.log("req.body:", req.file);
-  // return res.send({})
+  console.log("req.body:", req?.file);
 
   try {
-    console.log( "Start Time:",new Date().toLocaleTimeString() );
-
     if (!userId) {
       return res
         .status(400)
         .json({ sucess: false, massage: "userId is requred....." });
     }
 
-    //const userDetails = await UserSchema.findOne({ _id: userId });
-    const userDetails = await UserSchema.findById(userId);
-
+    const userDetails = await UserSchema.findOne({ _id: userId });
 
     if (!userDetails) {
       return res
@@ -69,18 +61,9 @@ exports.upload = async function (req, res) {
 
     const uploadedFile = req?.file;
 
-    console.log(
-      "uploadedFile",
-      uploadedFile,
-    );
+    console.log("uploadedFile", uploadedFile);
 
     const isVideo = uploadedFile.mimetype.startsWith("video/");
-
-    console.log(
-      "isVideo",
-      isVideo,
-    );
-
     const buffer = await sharp(req?.file?.buffer)
       .resize({ height: 1920, width: 1080, fit: "contain" })
       .toBuffer();
@@ -110,19 +93,13 @@ exports.upload = async function (req, res) {
       description: description,
       likes: [],
       comment: [],
-      user: userDetails,
+      // user: userDetails,
     };
-
     const addPost = await postSchemaModel.create(data);
-    console.log("data", addPost);
     if (addPost) {
       let updatePostCount = await userDetails.updateOne({
         $inc: { postCount: 1 },
       });
-      console.log(
-        "updatePostCount:",
-        updatePostCount,
-      );
       return res.status(200).json({
         sucess: true,
         massage: "file uploaded susessfuly in database.....",
@@ -140,13 +117,8 @@ exports.upload = async function (req, res) {
   }
 };
 
-
 exports.postDelete = async function (req, res) {
-  
-  console.log("reqqqqq", req);
-  console.log("req", req.params);
-
-  const { postId, userId } = req.params;
+  const { postId, userId } = req?.params;
   console.log("postId", postId);
   console.log("userId", userId);
   try {
@@ -163,9 +135,7 @@ exports.postDelete = async function (req, res) {
       Key: existingpost?.url,
     };
     const cmd = new DeleteObjectCommand(params);
-    // console.log("cmd:", cmd)
     const _del = await s3.send(cmd);
-    // console.log("_del:", _del)
     if (!existingpost) {
       return res
         .status(404)
@@ -173,13 +143,11 @@ exports.postDelete = async function (req, res) {
     }
 
     if (existingpost.userId.toString() !== userId) {
-      //console.log("");
       return res.status(404).json({
         success: false,
         message: "Unauthorized: Post does not belong to the user.",
       });
     }
-
     const deletePost = await postSchemaModel.findByIdAndDelete(postId);
 
     if (deletePost) {
@@ -199,10 +167,7 @@ exports.postDelete = async function (req, res) {
 };
 
 exports.likePost = async function (req, res) {
-  
   const { userId, postId, postUserId } = req.body;
-  
-  
 
   console.log("userId", userId);
   console.log("postId", postId);
@@ -211,7 +176,6 @@ exports.likePost = async function (req, res) {
   try {
     console.log("userId", userId);
     console.log("postId", postId);
-    
 
     if (!userId) {
       return res.status(400).json({ sucess: false, message: "userId require" });
@@ -233,9 +197,7 @@ exports.likePost = async function (req, res) {
         like.push(userId);
         post.likes = like;
         const result = await postSchemaModel.updateOne({ _id: postId }, post);
-        console.log("notification:");
         const getUserDetails = await userSchemaModel.findById(userId);
-        console.log("getUserDetails:", getUserDetails);
 
         let notificationObj = {
           userId: postUserId,
@@ -255,14 +217,15 @@ exports.likePost = async function (req, res) {
           .json({ sucess: true, message: "like succesfully", post });
       } else {
         const indexOfDislike = post.likes.indexOf(userId);
+
         if (indexOfDislike !== -1) {
           post.likes.splice(indexOfDislike, 1);
           const result = await postSchemaModel.updateOne({ _id: postId }, post);
           const notification = await notificationSchemaModel.findOneAndDelete({
-            // userId: userId,
             commentUserId: userId,
             postId: postId,
           });
+
           console.log("notification delete:", notification);
 
           return res
@@ -283,7 +246,6 @@ exports.likePost = async function (req, res) {
       .json({ sucess: false, message: "sever error", error });
   }
 };
-
 
 exports.getPostLikes = async function (req, res) {
   console.log("req.params", req.params);
@@ -321,43 +283,49 @@ exports.getPostLikes = async function (req, res) {
 
 exports.getAllPost = async function (req, res) {
   const startTime = new Date();
-  console.log(
-    "Start Time:",
-    startTime.toLocaleTimeString(undefined, { second: "numeric" })
-  );
   const { page = 1, limit = 10 } = req.query;
 
   try {
     const startIndex = (page - 1) * limit;
     const endIndex = page * limit;
+    // const posts = (await postSchemaModel.find({ type: "image" })).reverse();
+    const posts = (
+      await postSchemaModel.aggregate([
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "userDetails",
+          },
+        },
+        {
+          $unwind: "$userDetails",
+        },
+      ])
+    ).reverse();
 
-    const posts = (await postSchemaModel.find({ type: "image" })).reverse();
+    console.log("post", posts);
+
     for (const post of posts) {
       const getObjectParams = {
         Bucket: BUCKET_NAME,
         Key: post.url, //imageName
       };
-
-      const expiresInSeconds = 4 * 24 * 60 * 60;
+      const expiresInSeconds = 7 * 24 * 60 * 60;
       const command = new GetObjectCommand(getObjectParams);
       const url = await getSignedUrl(s3, command, {
         expiresIn: expiresInSeconds,
       }); //we can also use expires in for security
       post.url = url;
     }
-    
-    // console.log("data:", data);
-    // console.log("resulthdijl", result);
+
     const data = posts.slice(startIndex, endIndex);
-    console.log(
-      "data with time:",
-      data
-    );
+    console.log("data with time:", data);
     res.status(200).json({
       sucess: true,
       message: "post get successfuly",
       data: data,
-
     });
   } catch (error) {
     res.status(500).json({ sucess: false, message: "server error", error });
@@ -398,7 +366,7 @@ exports.getUserPost = async (req, res) => {
     //     {
     //       $unwind: "$user"
     //     },
-    //     // Other stages or operations as needed
+  
     //   ]);
 
     const posts = (await postSchemaModel.find({ userId: userId })).reverse();
@@ -414,7 +382,7 @@ exports.getUserPost = async (req, res) => {
         Key: post.url,
       };
 
-      const expiresInSeconds = 4 * 24 * 60 * 60;
+      const expiresInSeconds = 7 * 24 * 60 * 60;
 
       const command = new GetObjectCommand(getObjectParams);
       const url = await getSignedUrl(s3, command, {

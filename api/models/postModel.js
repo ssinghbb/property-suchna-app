@@ -20,7 +20,6 @@ var postSchema = new Schema({
   ],
   comment: [
     {
-      
       userId: {
         type: ObjectId,
         required: true,

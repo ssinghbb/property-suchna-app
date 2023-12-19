@@ -22,7 +22,8 @@ var mongoose = require("mongoose"),
 
 const client = require("twilio")(
   process.env.ACCOUNT_SID,
-  process.env.AUTH_TOKEN
+  process.env.AUTH_TOKEN,
+  process.env.SERVICE_ID
 );
 
 const randomImageName = (bytes = 32) =>
@@ -43,6 +44,8 @@ const s3 = new S3Client({
 
 //user register
 exports.register = async function (req, res) {
+  console.log("reqbodyyyyyy");
+  console.log("req", req.body);
   const data = req.body || {};
 
   console.log("L66 this is phone number:", req.body);
@@ -87,6 +90,7 @@ exports.register = async function (req, res) {
     return res.status(500).json({ success: false, error: error });
   }
 };
+
 
 //Verify the user mobile number via OTP
 exports.verify = function (req, res) {
@@ -148,7 +152,7 @@ exports.verify = function (req, res) {
                 }
                 return res
                   .status(200)
-                  .json({ success: false, data: "user registered" });
+                  .json({ success: false, message: "user registered" });
 
                 // Twilio verification code after the user is successfully saved
               })
@@ -203,7 +207,9 @@ exports.testapi = function (req, res) {
   return res.status(200).json({ message: "Server is running...." });
 };
 
+
 exports.sign_in = async function (req, res) {
+  console.log("loginsucesss");
   const { phoneNumber, password } = req.body;
   if (!phoneNumber) {
     return res
@@ -219,24 +225,29 @@ exports.sign_in = async function (req, res) {
 
   try {
     let user = await userSchemaModel.findOne({ phoneNumber });
+    console.log("user", user);
     if (user) {
       const passwordMatch = await bcrypt.compare(password, user.hash_password);
+      console.log("passwordMatch", passwordMatch);
       if (passwordMatch) {
         console.log("password is correct");
         const expirationTime =
           Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365;
+        console.log("expirationTime", expirationTime);
+
         const token = jwt.sign(
           { data: { _id: user._id }, exp: expirationTime },
           process.env.JWT_SECRET_KEY
         );
-        const getObjectParams = {
-          Bucket: BUCKET_NAME,
-          Key: user?.url, //imageName
-        };
-        const command = new GetObjectCommand(getObjectParams);
-        console.log("command:", command);
-        const url = await getSignedUrl(s3, command); //we can also use expires in for security
-        console.log("url:", url);
+        if (user?.url) {
+          const getObjectParams = {
+            Bucket: BUCKET_NAME,
+            Key: user?.url, //imageName
+          };
+          const command = new GetObjectCommand(getObjectParams);
+          const url = await getSignedUrl(s3, command); //we can also use expires in for security
+          console.log("url:", url);
+        }
 
         // user.url = url
         console.log("user?.url:", user?.url);
@@ -279,6 +290,7 @@ exports.profile = function (req, res, next) {
   }
 };
 
+
 exports.updateUser = async function (req, res) {
   console.log("req", req);
   console.log("Request body:", req?.file);
@@ -306,6 +318,7 @@ exports.updateUser = async function (req, res) {
     const uploadedFile = req?.file;
 
     console.log("uploadedFile", uploadedFile);
+    if(uploadedFile){
 
     const buffer = await sharp(uploadedFile.buffer)
       .resize({ height: 1920, width: 1080, fit: "contain" })
@@ -326,12 +339,15 @@ exports.updateUser = async function (req, res) {
       Key: imageName,
     };
 
-    const expiresInSeconds = 4 * 24 * 60 * 60;
+    const expiresInSeconds = 365.25 * 24 * 60 * 60;
 
     const getObjectCommand = new GetObjectCommand(getObjectParams);
-    const url = await getSignedUrl(s3, getObjectCommand,{expiresIn:expiresInSeconds});
+    const url = await getSignedUrl(s3, getObjectCommand, {
+      expiresIn: expiresInSeconds,
+    });
 
     user.url = url;
+    }
 
     if (fullName) {
       user.fullName = fullName;
@@ -353,7 +369,6 @@ exports.updateUser = async function (req, res) {
       message: "User updated successfully",
       data: updatedUser,
     });
-    
   } catch (error) {
     return res
       .status(500)
