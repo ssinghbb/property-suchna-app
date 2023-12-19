@@ -34,7 +34,7 @@ const s3 = new S3Client({
 });
 
 exports.upload = async function (req, res) {
-  console.log("Start Time:=", new Date().toLocaleTimeString());
+  // console.log("Start Time:=", new Date().toLocaleTimeString());
   const { userId, caption = "", userName, location, description } = req.body;
   console.log("req.body:", req?.file);
 
@@ -61,7 +61,7 @@ exports.upload = async function (req, res) {
 
     const uploadedFile = req?.file;
 
-    console.log("uploadedFile", uploadedFile);
+    // console.log("uploadedFile", uploadedFile);
 
     const isVideo = uploadedFile.mimetype.startsWith("video/");
     const buffer = await sharp(req?.file?.buffer)
@@ -79,10 +79,8 @@ exports.upload = async function (req, res) {
 
     const rr = new PutObjectCommand(params);
 
-    console.log("rr:", rr);
     const ans = await s3.send(rr);
 
-    console.log("ans:", ans);
 
     const data = {
       caption,
@@ -95,7 +93,9 @@ exports.upload = async function (req, res) {
       comment: [],
       // user: userDetails,
     };
+
     const addPost = await postSchemaModel.create(data);
+
     if (addPost) {
       let updatePostCount = await userDetails.updateOne({
         $inc: { postCount: 1 },
@@ -117,10 +117,9 @@ exports.upload = async function (req, res) {
   }
 };
 
+
 exports.postDelete = async function (req, res) {
   const { postId, userId } = req?.params;
-  console.log("postId", postId);
-  console.log("userId", userId);
   try {
     if (!userId || !postId) {
       return res
@@ -129,7 +128,6 @@ exports.postDelete = async function (req, res) {
     }
     const existingpost = await postSchemaModel.findById(postId);
 
-    console.log("existingpost", existingpost);
     const params = {
       Bucket: BUCKET_NAME,
       Key: existingpost?.url,
@@ -168,26 +166,14 @@ exports.postDelete = async function (req, res) {
 
 exports.likePost = async function (req, res) {
   const { userId, postId, postUserId } = req.body;
-
-  console.log("userId", userId);
-  console.log("postId", postId);
-  console.log("postUserId", postUserId);
-
   try {
-    console.log("userId", userId);
-    console.log("postId", postId);
-
     if (!userId) {
       return res.status(400).json({ sucess: false, message: "userId require" });
     }
-
     if (!postId) {
       return res.status(400).json({ sucess: false, message: "postId require" });
     }
     const post = await postSchemaModel.findOne({ _id: postId });
-
-    console.log("post:", post);
-
     if (post) {
       const isLike = post?.likes?.includes(userId);
       console.log("isLike", isLike);
@@ -225,9 +211,7 @@ exports.likePost = async function (req, res) {
             commentUserId: userId,
             postId: postId,
           });
-
           console.log("notification delete:", notification);
-
           return res
             .status(200)
             .json({ success: true, message: "Dislike successful", post });
@@ -247,10 +231,9 @@ exports.likePost = async function (req, res) {
   }
 };
 
+
 exports.getPostLikes = async function (req, res) {
-  console.log("req.params", req.params);
-  const _id = req.params._id;
-  console.log("postId", _id);
+  const _id = req?.params?._id;
   try {
     if (!_id) {
       return res
@@ -258,11 +241,8 @@ exports.getPostLikes = async function (req, res) {
         .json({ success: false, message: "postId is require" });
     }
     const result = await postSchemaModel.findById({ _id });
-    console.log("result", result);
     if (result) {
       const likes = result.likes || [];
-      //const totalLikes = likes.length;
-      console.log("likes", likes);
       return res.status(200).json({
         success: true,
         message: "get likes successfully",
@@ -282,7 +262,6 @@ exports.getPostLikes = async function (req, res) {
 };
 
 exports.getAllPost = async function (req, res) {
-  const startTime = new Date();
   const { page = 1, limit = 10 } = req.query;
 
   try {
@@ -304,9 +283,6 @@ exports.getAllPost = async function (req, res) {
         },
       ])
     ).reverse();
-
-    console.log("post", posts);
-
     for (const post of posts) {
       const getObjectParams = {
         Bucket: BUCKET_NAME,
@@ -321,7 +297,6 @@ exports.getAllPost = async function (req, res) {
     }
 
     const data = posts.slice(startIndex, endIndex);
-    console.log("data with time:", data);
     res.status(200).json({
       sucess: true,
       message: "post get successfuly",
@@ -335,7 +310,6 @@ exports.getAllPost = async function (req, res) {
 exports.getAllReels = async function (req, res) {
   try {
     const result = (await postSchemaModel.find({ type: "reel" })).reverse();
-    console.log("resulthdijl", result);
     res.status(200).json({
       sucess: true,
       message: "post get successfuly",
@@ -370,7 +344,6 @@ exports.getUserPost = async (req, res) => {
     //   ]);
 
     const posts = (await postSchemaModel.find({ userId: userId })).reverse();
-    console.log("post", posts);
     if (!posts || posts.lenght == 0) {
       return res
         .status(404)

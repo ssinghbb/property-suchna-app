@@ -44,12 +44,10 @@ const s3 = new S3Client({
 
 //user register
 exports.register = async function (req, res) {
-  console.log("reqbodyyyyyy");
   console.log("req", req.body);
   const data = req.body || {};
 
-  console.log("L66 this is phone number:", req.body);
-  console.log("L66 this is phone number:", req.body.phoneNumber);
+  console.log("phone number:", req.body.phoneNumber);
 
   if (!data.phoneNumber) {
     return res
@@ -61,7 +59,6 @@ exports.register = async function (req, res) {
   });
 
   if (existingUser) {
-    console.log("existingUser:", existingUser);
     return res.status(400).json({
       success: false,
       message: "User with this phone number already exists.",
@@ -75,30 +72,23 @@ exports.register = async function (req, res) {
         channel: "sms", // You can specify the channel here, either 'sms' or 'call'
       })
       .then((data) => {
-        console.log("data:", data);
         return res.json({ success: true, data: "Otp send successfull" });
       })
       .catch((err) => {
-        console.log("err:", err);
         return res.status(500).json({
           success: false,
           message: "Twilio verification failed. Please try again.",
         });
       });
   } catch (error) {
-    console.log("error:", error);
     return res.status(500).json({ success: false, error: error });
   }
 };
 
-
 //Verify the user mobile number via OTP
 exports.verify = function (req, res) {
-  console.log("verify route");
   const phoneNumber = req.body.phoneNumber;
-  console.log("🚀 ~ file: userController.js:127 ~ phoneNumber:", phoneNumber);
   const code = req.body.code;
-  console.log("🚀 ~ file: userController.js:129 ~ code:", code);
 
   // Check if the OTP is not exactly 6 digits
   if (code.length !== 6) {
@@ -114,7 +104,6 @@ exports.verify = function (req, res) {
       code: code,
     })
     .then((data) => {
-      console.log("🚀 ~ file: userControlle.js:144 ~ .then ~ data:", data);
       if (data.valid == false) {
         return res
           .status(400)
@@ -157,7 +146,6 @@ exports.verify = function (req, res) {
                 // Twilio verification code after the user is successfully saved
               })
               .catch((err) => {
-                console.log("err:", err);
                 let errorMessage = "An error occurred while creating the user.";
                 return res.status(400).send({
                   message: errorMessage,
@@ -207,9 +195,7 @@ exports.testapi = function (req, res) {
   return res.status(200).json({ message: "Server is running...." });
 };
 
-
 exports.sign_in = async function (req, res) {
-  console.log("loginsucesss");
   const { phoneNumber, password } = req.body;
   if (!phoneNumber) {
     return res
@@ -225,10 +211,8 @@ exports.sign_in = async function (req, res) {
 
   try {
     let user = await userSchemaModel.findOne({ phoneNumber });
-    console.log("user", user);
     if (user) {
       const passwordMatch = await bcrypt.compare(password, user.hash_password);
-      console.log("passwordMatch", passwordMatch);
       if (passwordMatch) {
         console.log("password is correct");
         const expirationTime =
@@ -246,11 +230,9 @@ exports.sign_in = async function (req, res) {
           };
           const command = new GetObjectCommand(getObjectParams);
           const url = await getSignedUrl(s3, command); //we can also use expires in for security
-          console.log("url:", url);
         }
 
         // user.url = url
-        console.log("user?.url:", user?.url);
         return res.status(200).json({
           success: true,
           message: "login successfully",
@@ -290,16 +272,8 @@ exports.profile = function (req, res, next) {
   }
 };
 
-
 exports.updateUser = async function (req, res) {
-  console.log("req", req);
-  console.log("Request body:", req?.file);
-
   const { fullName, phoneNumber, bio, userId } = req?.body;
-
-  console.log("userId", userId);
-  console.log("fullname", fullName, phoneNumber, bio, userId);
-
   try {
     if (!userId) {
       return res
@@ -317,36 +291,34 @@ exports.updateUser = async function (req, res) {
 
     const uploadedFile = req?.file;
 
-    console.log("uploadedFile", uploadedFile);
-    if(uploadedFile){
+    if (uploadedFile) {
+      const buffer = await sharp(uploadedFile.buffer)
+        .resize({ height: 1920, width: 1080, fit: "contain" })
+        .toBuffer();
+      const imageName = randomImageName();
+      const params = {
+        Bucket: BUCKET_NAME,
+        Key: imageName,
+        Body: buffer,
+        ContentType: uploadedFile.mimetype,
+      };
 
-    const buffer = await sharp(uploadedFile.buffer)
-      .resize({ height: 1920, width: 1080, fit: "contain" })
-      .toBuffer();
-    const imageName = randomImageName();
-    const params = {
-      Bucket: BUCKET_NAME,
-      Key: imageName,
-      Body: buffer,
-      ContentType: uploadedFile.mimetype,
-    };
+      const putObjectCommand = new PutObjectCommand(params);
+      await s3.send(putObjectCommand);
 
-    const putObjectCommand = new PutObjectCommand(params);
-    await s3.send(putObjectCommand);
+      const getObjectParams = {
+        Bucket: BUCKET_NAME,
+        Key: imageName,
+      };
 
-    const getObjectParams = {
-      Bucket: BUCKET_NAME,
-      Key: imageName,
-    };
+      const expiresInSeconds = 365.25 * 24 * 60 * 60;
 
-    const expiresInSeconds = 365.25 * 24 * 60 * 60;
+      const getObjectCommand = new GetObjectCommand(getObjectParams);
+      const url = await getSignedUrl(s3, getObjectCommand, {
+        expiresIn: expiresInSeconds,
+      });
 
-    const getObjectCommand = new GetObjectCommand(getObjectParams);
-    const url = await getSignedUrl(s3, getObjectCommand, {
-      expiresIn: expiresInSeconds,
-    });
-
-    user.url = url;
+      user.url = url;
     }
 
     if (fullName) {
@@ -362,7 +334,6 @@ exports.updateUser = async function (req, res) {
     }
 
     const updatedUser = await user.save();
-    console.log("updatedUser", updatedUser);
 
     return res.status(200).json({
       success: true,

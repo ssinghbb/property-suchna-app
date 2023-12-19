@@ -64,7 +64,6 @@ exports.getNotifications = async function (req, res) {
         Bucket: BUCKET_NAME,
         Key: notification?.post?.url,
       };
-      console.log('notification',notification);  
       const expiresInSeconds = 4 * 24 * 60 * 60;
       const command = new GetObjectCommand(getObjectParams);
       const url = await getSignedUrl(s3, command, {
