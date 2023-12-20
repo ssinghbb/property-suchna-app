@@ -24,7 +24,6 @@ var NotificationSchema = new Schema({
   fullName: {
     type: String,
   },
-
   isComment: {
     type: Boolean,  
     default: false,  

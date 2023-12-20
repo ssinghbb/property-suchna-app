@@ -274,6 +274,7 @@ exports.profile = function (req, res, next) {
 
 exports.updateUser = async function (req, res) {
   const { fullName, phoneNumber, bio, userId } = req?.body;
+  
   try {
     if (!userId) {
       return res
@@ -290,8 +291,9 @@ exports.updateUser = async function (req, res) {
     }
 
     const uploadedFile = req?.file;
+    
 
-    if (uploadedFile) {
+    if(uploadedFile) {
       const buffer = await sharp(uploadedFile.buffer)
         .resize({ height: 1920, width: 1080, fit: "contain" })
         .toBuffer();
@@ -311,7 +313,7 @@ exports.updateUser = async function (req, res) {
         Key: imageName,
       };
 
-      const expiresInSeconds = 365.25 * 24 * 60 * 60;
+      const expiresInSeconds =7 * 24 * 60 * 60;
 
       const getObjectCommand = new GetObjectCommand(getObjectParams);
       const url = await getSignedUrl(s3, getObjectCommand, {
