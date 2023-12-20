@@ -24,9 +24,9 @@ var postSchema = new Schema({
         type: ObjectId,
         required: true,
       },
-      userName: {
-        type: String,
-      },
+      // userName: {
+      //   type: String,
+      // },
       comment: {
         type: String,
       },
