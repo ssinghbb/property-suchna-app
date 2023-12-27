@@ -15,6 +15,7 @@ const crypto = require("crypto");
 const sharp = require("sharp");
 const userSchemaModel = require("../models/userModel");
 
+
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 //aws s3 setup
@@ -35,14 +36,17 @@ const s3 = new S3Client({
 
 exports.upload = async function (req, res) {
   // console.log("Start Time:=", new Date().toLocaleTimeString());
-  const { userId, caption = "", userName, location, description } = req.body;
+  console.log("req", req?.body);
+  const { userId, caption = "", userName, location, description } = req?.body;
+  console.log("userId", userId);
+  console.log("location", location);
+  console.log("description", description);
   console.log("req.body:", req?.file);
-
   try {
     if (!userId) {
       return res
         .status(400)
-        .json({ sucess: false, massage: "userId is requred....." });
+        .json({ success: false, message: "userId is required." });
     }
 
     const userDetails = await UserSchema.findOne({ _id: userId });
@@ -56,17 +60,23 @@ exports.upload = async function (req, res) {
     if (!req?.file) {
       return res
         .status(400)
-        .json({ sucess: false, massage: " file is requred..." });
+        .json({ success: false, message: "file is required." });
     }
 
     const uploadedFile = req?.file;
-
-    // console.log("uploadedFile", uploadedFile);
-
+    console.log("uploadedFile", uploadedFile);
     const isVideo = uploadedFile.mimetype.startsWith("video/");
-    const buffer = await sharp(req?.file?.buffer)
-      .resize({ height: 1920, width: 1080, fit: "contain" })
-      .toBuffer();
+    console.log("isVideo", isVideo);
+    
+    if (isVideo) {
+      buffer = (req?.file?.buffer);
+      console.log("VideoData", buffer);
+    } else {
+      buffer = await sharp(req?.file?.buffer)
+        .resize({ height: 1920, width: 1080, fit: "contain" })
+        .toBuffer();
+      console.log("ImageData", buffer);
+    }
 
     const imageName = randomImageName();
 
@@ -81,7 +91,6 @@ exports.upload = async function (req, res) {
 
     const ans = await s3.send(rr);
 
-
     const data = {
       caption,
       userId: userId,
@@ -91,7 +100,6 @@ exports.upload = async function (req, res) {
       description: description,
       likes: [],
       comment: [],
-      // user: userDetails,
     };
 
     const addPost = await postSchemaModel.create(data);
@@ -101,22 +109,22 @@ exports.upload = async function (req, res) {
         $inc: { postCount: 1 },
       });
       return res.status(200).json({
-        sucess: true,
-        massage: "file uploaded susessfuly in database.....",
+        success: true,
+        message: "File uploaded successfully in the database.",
         data: data,
       });
     } else {
       return res
         .status(404)
-        .json({ sucess: false, message: "file not save in database....." });
+        .json({ success: false, message: "File not saved in the database." });
     }
   } catch (error) {
+    console.error("Error:", error);
     return res
-      .status(404)
-      .json({ sucess: false, massage: "server error", data: error });
+      .status(500)
+      .json({ success: false, message: "Internal server error.", data: error });
   }
 };
-
 
 exports.postDelete = async function (req, res) {
   const { postId, userId } = req?.params;
@@ -231,7 +239,6 @@ exports.likePost = async function (req, res) {
   }
 };
 
-
 exports.getPostLikes = async function (req, res) {
   const _id = req?.params?._id;
   try {
@@ -263,13 +270,15 @@ exports.getPostLikes = async function (req, res) {
 
 exports.getAllPost = async function (req, res) {
   const { page = 1, limit = 10 } = req.query;
-
   try {
     const startIndex = (page - 1) * limit;
     const endIndex = page * limit;
     // const posts = (await postSchemaModel.find({ type: "image" })).reverse();
     const posts = (
       await postSchemaModel.aggregate([
+        {
+          $match: { type: "image" },
+        },
         {
           $lookup: {
             from: "users",
@@ -295,7 +304,6 @@ exports.getAllPost = async function (req, res) {
       }); //we can also use expires in for security
       post.url = url;
     }
-
     const data = posts.slice(startIndex, endIndex);
     res.status(200).json({
       sucess: true,
@@ -308,15 +316,49 @@ exports.getAllPost = async function (req, res) {
 };
 
 exports.getAllReels = async function (req, res) {
+  // const { page = 1, limit = 10 } = req.query;
   try {
-    const result = (await postSchemaModel.find({ type: "reel" })).reverse();
+    // const startIndex = (page - 1) * limit;
+    // const endIndex = page * limit;
+    const posts = (
+      await postSchemaModel.aggregate([
+        {
+          $match: { type: "reel" }, 
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "userDetails",
+          },
+        },
+        {
+          $unwind: "$userDetails",
+        },
+      ])
+    ).reverse();
+
+    for (const post of posts) {
+      const getObjectParams = {
+        Bucket: BUCKET_NAME,
+        Key: post.url,
+      };
+      const expiresInSeconds = 7 * 24 * 60 * 60;
+      const command = new GetObjectCommand(getObjectParams);
+      const url = await getSignedUrl(s3, command, {
+        expiresIn: expiresInSeconds,
+      });
+      post.url = url;
+    }
+    // const data = posts.slice(startIndex, endIndex);
     res.status(200).json({
-      sucess: true,
-      message: "post get successfuly",
-      data: result,
+      success: true,
+      message: "Reels retrieved successfully",
+      data: posts,
     });
   } catch (error) {
-    res.status(500).json({ sucess: false, message: "server error", error });
+    res.status(500).json({ success: false, message: "Server error", error });
   }
 };
 
@@ -340,7 +382,7 @@ exports.getUserPost = async (req, res) => {
     //     {
     //       $unwind: "$user"
     //     },
-  
+
     //   ]);
 
     const posts = (await postSchemaModel.find({ userId: userId })).reverse();
