@@ -327,11 +327,47 @@ exports.getPostById = async function (req, res) {
         .json({ success: false, message: "id require" });
     }
     console.log("id:", postId)
-    const post = await postSchemaModel.findById(`${postId}`);
+    const post = await postSchemaModel.aggregate([
+      {
+        $match: {
+          _id:new  mongoose.Types.ObjectId(postId),
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'userDetails',  
+        },
+      },
+      {
+        $unwind: '$userDetails',
+      },
+    ]);
+    console.log("post:", post)
 
+    // const post = (
+    //   await postSchemaModel.aggregate([
+    //     {
+    //       $match: { _id: `${postId}`},
+    //     },
+    //     {
+    //       $lookup: {
+    //         from: "users",
+    //         localField: "userId",
+    //         foreignField: "_id",
+    //         as: "userDetails",
+    //       },
+    //     },
+    //     {
+    //       $unwind: "$userDetails",
+    //     },
+    //   ])
+    // ).reverse();
     const getObjectParams = {
       Bucket: BUCKET_NAME,
-      Key: post.url, //imageName
+      Key: post[0].url, //imageName
     };
     const expiresInSeconds = 7 * 24 * 60 * 60;
     const command = new GetObjectCommand(getObjectParams);
