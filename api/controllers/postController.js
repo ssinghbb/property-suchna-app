@@ -67,7 +67,7 @@ exports.upload = async function (req, res) {
     console.log("uploadedFile", uploadedFile);
     const isVideo = uploadedFile.mimetype.startsWith("video/");
     console.log("isVideo", isVideo);
-    
+
     if (isVideo) {
       buffer = (req?.file?.buffer);
       console.log("VideoData", buffer);
@@ -314,6 +314,48 @@ exports.getAllPost = async function (req, res) {
     res.status(500).json({ sucess: false, message: "server error", error });
   }
 };
+exports.getPostById = async function (req, res) {
+  const { postId } = req.params;
+  console.log("req.params:", req.params)
+
+  try {
+
+
+    if (!postId) {
+      return res
+        .status(404)
+        .json({ success: false, message: "id require" });
+    }
+    console.log("id:", postId)
+    const post = await postSchemaModel.findById(`${postId}`);
+
+    const getObjectParams = {
+      Bucket: BUCKET_NAME,
+      Key: post.url, //imageName
+    };
+    const expiresInSeconds = 7 * 24 * 60 * 60;
+    const command = new GetObjectCommand(getObjectParams);
+    const url = await getSignedUrl(s3, command, {
+      expiresIn: expiresInSeconds,
+    }); //we can also use expires in for security
+    post.url = url;
+    console.log("posts:", post)
+    res.status(200).json({
+      success: true,
+      message: "Post retrieved successfully",
+      data: post,
+    });
+
+  } catch (error) {
+    console.log("error:", error)
+    return res
+      .status(500)
+      .json({ success: false, message: "server error", error });
+
+
+  }
+
+}
 
 exports.getAllReels = async function (req, res) {
   // const { page = 1, limit = 10 } = req.query;
@@ -323,7 +365,7 @@ exports.getAllReels = async function (req, res) {
     const posts = (
       await postSchemaModel.aggregate([
         {
-          $match: { type: "reel" }, 
+          $match: { type: "reel" },
         },
         {
           $lookup: {

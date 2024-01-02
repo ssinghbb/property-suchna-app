@@ -13,4 +13,5 @@ module.exports = function (app) {
   app.route("/post/allpost").get(postController.getAllPost);
   app.route("/post/allreel").get(postController.getAllReels);
   app.route("/post/userpost/:userId").get(postController.getUserPost);
+  app.route("/post/:postId").get(postController.getPostById);
 };
