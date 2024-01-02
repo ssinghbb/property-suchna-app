@@ -374,7 +374,7 @@ exports.getPostById = async function (req, res) {
     const url = await getSignedUrl(s3, command, {
       expiresIn: expiresInSeconds,
     }); //we can also use expires in for security
-    post.url = url;
+    post[0].url = url;
     console.log("posts:", post)
     res.status(200).json({
       success: true,
