@@ -172,6 +172,7 @@ exports.postDelete = async function (req, res) {
   }
 };
 
+
 exports.likePost = async function (req, res) {
   const { userId, postId, postUserId } = req.body;
   try {
@@ -267,6 +268,7 @@ exports.getPostLikes = async function (req, res) {
       .json({ success: false, message: "server error" }, error);
   }
 };
+
 
 exports.getAllPost = async function (req, res) {
   const { page = 1, limit = 10 } = req.query;
@@ -393,11 +395,12 @@ exports.getPostById = async function (req, res) {
 
 }
 
+
 exports.getAllReels = async function (req, res) {
-  // const { page = 1, limit = 10 } = req.query;
+   const { page = 1, limit = 10 } = req.query;
   try {
-    // const startIndex = (page - 1) * limit;
-    // const endIndex = page * limit;
+     const startIndex = (page - 1) * limit;
+     const endIndex = page * limit;
     const posts = (
       await postSchemaModel.aggregate([
         {
@@ -429,16 +432,17 @@ exports.getAllReels = async function (req, res) {
       });
       post.url = url;
     }
-    // const data = posts.slice(startIndex, endIndex);
+     const data = posts.slice(startIndex, endIndex);
     res.status(200).json({
       success: true,
       message: "Reels retrieved successfully",
-      data: posts,
+      data: data,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server error", error });
   }
 };
+
 
 exports.getUserPost = async (req, res) => {
   const userId = req.params.userId;
@@ -472,7 +476,7 @@ exports.getUserPost = async (req, res) => {
     for (const post of posts) {
       const getObjectParams = {
         Bucket: BUCKET_NAME,
-        Key: post.url,
+        Key: post?.url,
       };
 
       const expiresInSeconds = 7 * 24 * 60 * 60;
@@ -492,3 +496,62 @@ exports.getUserPost = async (req, res) => {
       .json({ success: false, message: "server error", error });
   }
 };
+
+
+
+exports.reelDelete = async function (req, res) {
+  // const userId = req?.params?
+  // // console.log(req);
+  const { reelId, userId } = req?.params;
+  console.log("reelId",reelId);
+  console.log("userId",userId);
+
+  try {
+    if (!userId || !reelId) {
+      return res
+        .status(404)
+        .json({ success: false, message: "userId and reelId required" });
+    }
+
+    const existingReel = await postSchemaModel.findById(reelId); 
+
+    const params = {
+      Bucket: BUCKET_NAME,
+      Key: existingReel?.url,
+    };
+    const cmd = new DeleteObjectCommand(params);
+    const _del = await s3.send(cmd);
+
+    if (!existingReel) {
+      return res
+        .status(404)
+        .json({ success: false, message: "reel not found" });
+    }
+
+    if (existingReel?.userId?.toString() !== userId) {
+      return res.status(404).json({
+        success: false,
+        message: "Unauthorized: Reel does not belong to the user.",
+      });
+    }
+
+    const deleteReel = await postSchemaModel.findByIdAndDelete(reelId); // Assuming there is a reelSchemaModel
+
+    if (deleteReel) {
+      return res
+        .status(200)
+        .json({ success: true, message: "reel delete successfully" });
+    } else {
+      return res
+        .status(404)
+        .json({ success: false, message: "Failed to delete reel." });
+    }
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "server error", error });
+  }
+};
+
+
+
