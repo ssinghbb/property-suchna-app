@@ -1,6 +1,9 @@
 var mongoose = require("mongoose");
 //var postSchemaModel = require("../models/postModel");
 var path = require("path");
+const ffmpeg = require("fluent-ffmpeg");
+const stream = require("stream");
+const fs = require("fs");
 var UserSchema = require("../models/userModel");
 var postSchemaModel = require("../models/postModel");
 var notificationSchemaModel = require("../models/notificationModel");
@@ -14,7 +17,6 @@ const {
 const crypto = require("crypto");
 const sharp = require("sharp");
 const userSchemaModel = require("../models/userModel");
-
 
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
@@ -34,6 +36,8 @@ const s3 = new S3Client({
   region: BUCKET_REGION,
 });
 
+
+
 exports.upload = async function (req, res) {
   // console.log("Start Time:=", new Date().toLocaleTimeString());
   console.log("req", req?.body);
@@ -42,6 +46,7 @@ exports.upload = async function (req, res) {
   console.log("location", location);
   console.log("description", description);
   console.log("req.body:", req?.file);
+
   try {
     if (!userId) {
       return res
@@ -68,8 +73,61 @@ exports.upload = async function (req, res) {
     const isVideo = uploadedFile.mimetype.startsWith("video/");
     console.log("isVideo", isVideo);
 
+    let buffer;
+    const imageName = randomImageName();
     if (isVideo) {
-      buffer = (req?.file?.buffer);
+      const videoSizeInBytes = req?.file?.size;
+      console.log(videoSizeInBytes);
+
+      if (videoSizeInBytes > 6 * 1024 * 1024) {
+        const compressedVideoPath = `${imageName}_compressed.mp4`;
+        console.log("compressedVideoPath", compressedVideoPath);
+        try {
+          await new Promise((resolve, reject) => {
+            const inputBuffer = req?.file?.buffer;
+            const inputStream = new stream.PassThrough();
+            inputStream.end(inputBuffer);
+
+            ffmpeg()
+              .input(inputStream)
+              .inputFormat("mp4")
+              .videoCodec("libx264")
+               .audioCodec('aac')
+               .outputOptions([
+                '-preset veryfast',
+                 '-b:v 1M',
+                // '-crf 23',
+              ])
+              .on("end", () => {
+                console.log("Video compression successful.");
+                resolve();
+              })
+              .on("error", (err) => {
+                console.error("Error during video compression:", err);
+                reject(err);
+              })
+              .saveToFile(compressedVideoPath);
+          });
+          buffer = await fs.promises.readFile(compressedVideoPath);
+          fs.unlinkSync(compressedVideoPath);
+          // console.log("Compressed video size:", buffer.length, "bytes");
+          const compressedVideoSizeInMB = buffer.length / (1024 * 1024);
+          console.log(
+            "Compressed video size:",
+            compressedVideoSizeInMB.toFixed(2),
+            "MB"
+          );
+        } catch (compressionError) {
+          console.error("Error during video compression:", compressionError);
+          return res.status(500).json({
+            success: false,
+            message: "Error during video compression.",
+            data: compressionError,
+          });
+        }
+      } else {
+        buffer = req?.file?.buffer;
+      }
       console.log("VideoData", buffer);
     } else {
       buffer = await sharp(req?.file?.buffer)
@@ -78,7 +136,7 @@ exports.upload = async function (req, res) {
       console.log("ImageData", buffer);
     }
 
-    const imageName = randomImageName();
+    // const imageName = randomImageName();
 
     const params = {
       Bucket: BUCKET_NAME,
@@ -104,6 +162,10 @@ exports.upload = async function (req, res) {
 
     const addPost = await postSchemaModel.create(data);
 
+    if (isVideo) {
+      console.log(`Uploaded video size: ${buffer.length} bytes`);
+    }
+
     if (addPost) {
       let updatePostCount = await userDetails.updateOne({
         $inc: { postCount: 1 },
@@ -125,6 +187,8 @@ exports.upload = async function (req, res) {
       .json({ success: false, message: "Internal server error.", data: error });
   }
 };
+
+
 
 exports.postDelete = async function (req, res) {
   const { postId, userId } = req?.params;
@@ -171,7 +235,6 @@ exports.postDelete = async function (req, res) {
       .json({ success: false, message: "sever error", error });
   }
 };
-
 
 exports.likePost = async function (req, res) {
   const { userId, postId, postUserId } = req.body;
@@ -240,6 +303,7 @@ exports.likePost = async function (req, res) {
   }
 };
 
+
 exports.getPostLikes = async function (req, res) {
   const _id = req?.params?._id;
   try {
@@ -268,7 +332,6 @@ exports.getPostLikes = async function (req, res) {
       .json({ success: false, message: "server error" }, error);
   }
 };
-
 
 exports.getAllPost = async function (req, res) {
   const { page = 1, limit = 10 } = req.query;
@@ -318,36 +381,32 @@ exports.getAllPost = async function (req, res) {
 };
 exports.getPostById = async function (req, res) {
   const { postId } = req.params;
-  console.log("req.params:", req.params)
+  console.log("req.params:", req.params);
 
   try {
-
-
     if (!postId) {
-      return res
-        .status(404)
-        .json({ success: false, message: "id require" });
+      return res.status(404).json({ success: false, message: "id require" });
     }
-    console.log("id:", postId)
+    console.log("id:", postId);
     const post = await postSchemaModel.aggregate([
       {
         $match: {
-          _id:new  mongoose.Types.ObjectId(postId),
+          _id: new mongoose.Types.ObjectId(postId),
         },
       },
       {
         $lookup: {
-          from: 'users',
-          localField: 'userId',
-          foreignField: '_id',
-          as: 'userDetails',  
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "userDetails",
         },
       },
       {
-        $unwind: '$userDetails',
+        $unwind: "$userDetails",
       },
     ]);
-    console.log("post:", post)
+    console.log("post:", post);
 
     // const post = (
     //   await postSchemaModel.aggregate([
@@ -377,30 +436,25 @@ exports.getPostById = async function (req, res) {
       expiresIn: expiresInSeconds,
     }); //we can also use expires in for security
     post[0].url = url;
-    console.log("posts:", post)
+    console.log("posts:", post);
     res.status(200).json({
       success: true,
       message: "Post retrieved successfully",
       data: post,
     });
-
   } catch (error) {
-    console.log("error:", error)
+    console.log("error:", error);
     return res
       .status(500)
       .json({ success: false, message: "server error", error });
-
-
   }
-
-}
-
+};
 
 exports.getAllReels = async function (req, res) {
-   const { page = 1, limit = 10 } = req.query;
+  const { page = 1, limit = 10 } = req.query;
   try {
-     const startIndex = (page - 1) * limit;
-     const endIndex = page * limit;
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
     const posts = (
       await postSchemaModel.aggregate([
         {
@@ -432,7 +486,7 @@ exports.getAllReels = async function (req, res) {
       });
       post.url = url;
     }
-     const data = posts.slice(startIndex, endIndex);
+    const data = posts.slice(startIndex, endIndex);
     res.status(200).json({
       success: true,
       message: "Reels retrieved successfully",
@@ -442,7 +496,6 @@ exports.getAllReels = async function (req, res) {
     res.status(500).json({ success: false, message: "Server error", error });
   }
 };
-
 
 exports.getUserPost = async (req, res) => {
   const userId = req.params.userId;
@@ -497,14 +550,12 @@ exports.getUserPost = async (req, res) => {
   }
 };
 
-
-
 exports.reelDelete = async function (req, res) {
   // const userId = req?.params?
   // // console.log(req);
   const { reelId, userId } = req?.params;
-  console.log("reelId",reelId);
-  console.log("userId",userId);
+  console.log("reelId", reelId);
+  console.log("userId", userId);
 
   try {
     if (!userId || !reelId) {
@@ -513,7 +564,7 @@ exports.reelDelete = async function (req, res) {
         .json({ success: false, message: "userId and reelId required" });
     }
 
-    const existingReel = await postSchemaModel.findById(reelId); 
+    const existingReel = await postSchemaModel.findById(reelId);
 
     const params = {
       Bucket: BUCKET_NAME,
@@ -552,6 +603,3 @@ exports.reelDelete = async function (req, res) {
       .json({ success: false, message: "server error", error });
   }
 };
-
-
-
