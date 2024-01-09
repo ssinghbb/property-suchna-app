@@ -36,8 +36,6 @@ const s3 = new S3Client({
   region: BUCKET_REGION,
 });
 
-
-
 exports.upload = async function (req, res) {
   // console.log("Start Time:=", new Date().toLocaleTimeString());
   console.log("req", req?.body);
@@ -72,63 +70,60 @@ exports.upload = async function (req, res) {
     console.log("uploadedFile", uploadedFile);
     const isVideo = uploadedFile.mimetype.startsWith("video/");
     console.log("isVideo", isVideo);
-
+    const videoSizeLimitMB = 2;
     let buffer;
     const imageName = randomImageName();
+
     if (isVideo) {
       const videoSizeInBytes = req?.file?.size;
       console.log(videoSizeInBytes);
 
-      if (videoSizeInBytes > 6 * 1024 * 1024) {
-        const compressedVideoPath = `${imageName}_compressed.mp4`;
-        console.log("compressedVideoPath", compressedVideoPath);
-        try {
-          await new Promise((resolve, reject) => {
-            const inputBuffer = req?.file?.buffer;
-            const inputStream = new stream.PassThrough();
-            inputStream.end(inputBuffer);
+      const compressedVideoPath = `${imageName}_compressed.mp4`;
+      console.log("compressedVideoPath", compressedVideoPath);
+      try {
+        await new Promise((resolve, reject) => {
+          const inputBuffer = req?.file?.buffer;
+          const inputStream = new stream.PassThrough();
+          inputStream.end(inputBuffer);
 
-            ffmpeg()
-              .input(inputStream)
-              .inputFormat("mp4")
-              .videoCodec("libx264")
-               .audioCodec('aac')
-               .outputOptions([
-                '-preset veryfast',
-                 '-b:v 1M',
-                // '-crf 23',
-              ])
-              .on("end", () => {
-                console.log("Video compression successful.");
-                resolve();
-              })
-              .on("error", (err) => {
-                console.error("Error during video compression:", err);
-                reject(err);
-              })
-              .saveToFile(compressedVideoPath);
-          });
-          buffer = await fs.promises.readFile(compressedVideoPath);
-          fs.unlinkSync(compressedVideoPath);
-          // console.log("Compressed video size:", buffer.length, "bytes");
-          const compressedVideoSizeInMB = buffer.length / (1024 * 1024);
-          console.log(
-            "Compressed video size:",
-            compressedVideoSizeInMB.toFixed(2),
-            "MB"
-          );
-        } catch (compressionError) {
-          console.error("Error during video compression:", compressionError);
-          return res.status(500).json({
-            success: false,
-            message: "Error during video compression.",
-            data: compressionError,
-          });
-        }
-      } else {
-        buffer = req?.file?.buffer;
+          ffmpeg()
+            .input(inputStream)
+            .inputFormat("mp4")
+            .videoCodec("libx264")
+            .audioCodec("aac")
+            .outputOptions([
+              "-preset veryfast",
+              // "-b:v 500K",
+                '-b:v 1M',
+              // '-crf 23',
+            ])
+            .on("end", () => {
+              console.log("Video compression successful.");
+              resolve();
+            })
+            .on("error", (err) => {
+              console.error("Error during video compression:", err);
+              reject(err);
+            })
+            .saveToFile(compressedVideoPath);
+        });
+        buffer = await fs.promises.readFile(compressedVideoPath);
+        fs.unlinkSync(compressedVideoPath);
+        // console.log("Compressed video size:", buffer.length, "bytes");
+        const compressedVideoSizeInMB = buffer.length / (1024 * 1024);
+        console.log(
+          "Compressed video size:",
+          compressedVideoSizeInMB.toFixed(2),
+          "MB"
+        );
+      } catch (compressionError) {
+        console.error("Error during video compression:", compressionError);
+        return res.status(500).json({
+          success: false,
+          message: "Error during video compression.",
+          data: compressionError,
+        });
       }
-      console.log("VideoData", buffer);
     } else {
       buffer = await sharp(req?.file?.buffer)
         .resize({ height: 1920, width: 1080, fit: "contain" })
@@ -187,8 +182,6 @@ exports.upload = async function (req, res) {
       .json({ success: false, message: "Internal server error.", data: error });
   }
 };
-
-
 
 exports.postDelete = async function (req, res) {
   const { postId, userId } = req?.params;
@@ -302,7 +295,6 @@ exports.likePost = async function (req, res) {
       .json({ sucess: false, message: "sever error", error });
   }
 };
-
 
 exports.getPostLikes = async function (req, res) {
   const _id = req?.params?._id;
