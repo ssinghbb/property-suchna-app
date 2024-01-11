@@ -15,4 +15,5 @@ module.exports = function (app) {
   app.route("/post/deletereel/:reelId/:userId").delete(postController.reelDelete);
   app.route("/post/userpost/:userId").get(postController.getUserPost);
   app.route("/post/:postId").get(postController.getPostById);
+  app.route("/reel/like").put(postController.likeReel);
 };

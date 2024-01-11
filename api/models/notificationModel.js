@@ -15,6 +15,9 @@ var NotificationSchema = new Schema({
   postId: {
     type: ObjectId,
   },
+  reelId: {
+    type: ObjectId,
+  },
   commentUserId: {
     type: ObjectId,
   },

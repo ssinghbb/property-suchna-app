@@ -595,3 +595,76 @@ exports.reelDelete = async function (req, res) {
       .json({ success: false, message: "server error", error });
   }
 };
+
+
+exports.likeReel = async function (req, res) {
+  const { userId, reelId, reelUserId } = req?.body;
+  console.log("userId,reelId,reelUserId",userId,reelId,reelUserId);
+  try {
+    if (!userId) {
+      return res.status(400).json({ sucess: false, message: "userId require" });
+    }
+    if (!reelId) {
+      return res.status(400).json({ sucess: false, message: "postId require" });
+    }
+    const reel = await postSchemaModel.findOne({ _id: reelId });
+    console.log("reel",reel);
+    if (reel) {
+      const isLike = reel?.likes?.includes(userId);
+      console.log("isLikebefor", isLike);
+
+      if (!isLike) {
+        const like = reel?.likes;
+        like.push(userId);
+        reel.likes = like;
+        const result = await postSchemaModel.updateOne({ _id: reelId }, reel);
+        const getUserDetails = await userSchemaModel.findById(userId);
+
+        let notificationObj = {
+          userId: reelUserId,
+          postId: reelId,
+          comment: `${getUserDetails?.fullName} like your post`,
+          commentUserId: userId,
+          isLike: true,
+          fullName: getUserDetails?.fullName,
+        };
+        const notification = await notificationSchemaModel.create(
+          notificationObj
+        );
+
+        console.log("notification:", notification);
+        return res
+          .status(200)
+          .json({ sucess: true, message: "like succesfully", reel });
+      } else {
+        const indexOfDislike = reel?.likes.indexOf(userId);
+        console.log("indexOfDislike",indexOfDislike);
+
+        if (indexOfDislike !== -1) {
+          reel.likes.splice(indexOfDislike, 1);
+          const result = await postSchemaModel.updateOne({ _id: reelId }, reel);
+          console.log("result",result);
+          const notification = await notificationSchemaModel.findOneAndDelete({
+            commentUserId: userId,
+            reelId: reelId,
+          });
+          console.log("notification delete:", notification);
+          return res
+            .status(200)
+            .json({ success: true, message: "Dislike successful", reel });
+        } else {
+          return res
+            .status(400)
+            .json({ success: false, message: "Post has not been disliked" });
+        }
+      }
+    } else {
+      return res.status(400).json({ sucess: false, message: "post not found" });
+    }
+  } catch (error) {
+    return res
+      .status(404)
+      .json({ sucess: false, message: "sever error", error });
+  }
+};
+
