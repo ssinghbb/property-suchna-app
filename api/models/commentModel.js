@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const { ObjectId } = mongoose.Schema.Types;
 const Schema = mongoose.Schema;
 
+
 const commentSchema = new Schema({
   comment: {
     type: String,
@@ -14,7 +15,11 @@ const commentSchema = new Schema({
   },
   postId: {
     type: ObjectId,
-    required: true,
+    // required: true,
+  },
+  reelId: {
+    type: ObjectId,
+    // required: true,
   },
   likes:[{
         type: ObjectId,
@@ -24,6 +29,7 @@ const commentSchema = new Schema({
     default: Date.now,
   },
 });
+
 const commentSchemaModel= mongoose.model("comments",commentSchema)
 module.exports=commentSchemaModel;
 
