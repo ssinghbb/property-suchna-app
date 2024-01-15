@@ -181,31 +181,31 @@ exports.addReelComment = async function (req, res) {
 
 
 
-// exports.getReelComments = async (req, res) => {
-//   const { reelId } = req?.params;
-//   console.log("reelId", reelId);
-//   try {
-//     if (!reelId) {
-//       return res
-//         .status(404)
-//         .json({ success: false, message: "reelId require" });
-//     }
-//     const result = (await commentSchemaModel.find({ reelId })).reverse();
-//     console.log(" get comment result", result);
-//     if (result) {
-//       return res.status(200).json({
-//         success: true,
-//         message: "comment get successfully",
-//         data: result,
-//       });
-//     } else {
-//       return res
-//         .status(404)
-//         .json({ success: false, message: "post not found" });
-//     }
-//   } catch (error) {
-//     return res
-//       .status(500)
-//       .json({ success: false, message: "server erroe", error });
-//   }
-// };
+exports.getReelComments = async (req, res) => {
+  const { reelId } = req?.params;
+  console.log("reelId", reelId);
+  try {
+    if (!reelId) {
+      return res
+        .status(404)
+        .json({ success: false, message: "reelId require" });
+    }
+    const result = (await commentSchemaModel.find({ reelId })).reverse();
+    console.log(" get comment result", result);
+    if (result) {
+      return res.status(200).json({
+        success: true,
+        message: "comment get successfully",
+        data: result,
+      });
+    } else {
+      return res
+        .status(404)
+        .json({ success: false, message: "post not found" });
+    }
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "server erroe", error });
+  }
+};
