@@ -53,11 +53,17 @@ exports.upload = async function (req, res) {
     }
 
     const userDetails = await UserSchema.findOne({ _id: userId });
+    console.log("userDetails:new change", userDetails)
 
     if (!userDetails) {
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
+    }
+    if(userDetails.postCount > 10) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Only 10 post you can upload" });
     }
 
     if (!req?.file) {
@@ -326,6 +332,7 @@ exports.getPostLikes = async function (req, res) {
 };
 
 exports.getAllPost = async function (req, res) {
+  console.log("getAllPost")
   const { page = 1, limit = 10 } = req.query;
   try {
     const startIndex = (page - 1) * limit;
