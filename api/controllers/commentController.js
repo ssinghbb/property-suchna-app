@@ -179,8 +179,6 @@ exports.addReelComment = async function (req, res) {
   }
 };
 
-
-
 exports.getReelComments = async (req, res) => {
   const { reelId } = req?.params;
   console.log("reelId", reelId);

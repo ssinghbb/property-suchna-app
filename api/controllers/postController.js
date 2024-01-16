@@ -36,6 +36,154 @@ const s3 = new S3Client({
   region: BUCKET_REGION,
 });
 
+// exports.upload = async function (req, res) {
+//   // console.log("Start Time:=", new Date().toLocaleTimeString());
+//   console.log("req", req?.body);
+//   const { userId, caption = "", userName, location, description } = req?.body;
+//   console.log("userId", userId);
+//   console.log("location", location);
+//   console.log("description", description);
+//   console.log("req.body:", req?.file);
+
+//   try {
+//     if (!userId) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "userId is required." });
+//     }
+
+//     const userDetails = await UserSchema.findOne({ _id: userId });
+
+//     if (!userDetails) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "User not found" });
+//     }
+
+//     if (!req?.file) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "file is required." });
+//     }
+
+//     const uploadedFile = req?.file;
+//     console.log("uploadedFile", uploadedFile);
+//     const isVideo = uploadedFile.mimetype.startsWith("video/");
+//     console.log("isVideo", isVideo);
+//     const videoSizeLimitMB = 2;
+//     let buffer;
+//     const imageName = randomImageName();
+
+//     if (isVideo) {
+//       const videoSizeInBytes = req?.file?.size;
+//       console.log(videoSizeInBytes);
+
+//       const compressedVideoPath = `${imageName}_compressed.mp4`;
+//       console.log("compressedVideoPath", compressedVideoPath);
+//       try {
+//         await new Promise((resolve, reject) => {
+//           const inputBuffer = req?.file?.buffer;
+//           const inputStream = new stream.PassThrough();
+//           inputStream.end(inputBuffer);
+
+//           ffmpeg()
+//             .input(inputStream)
+//             .inputFormat("mp4")
+//             .videoCodec("libx264")
+//             .audioCodec("aac")
+//             .outputOptions([
+//               "-preset veryfast",
+//               // "-b:v 500K",
+//                 '-b:v 1M',
+//               // '-crf 23',
+//             ])
+//             .on("end", () => {
+//               console.log("Video compression successful.");
+//               resolve();
+//             })
+//             .on("error", (err) => {
+//               console.error("Error during video compression:", err);
+//               reject(err);
+//             })
+//             .saveToFile(compressedVideoPath);
+//         });
+//         buffer = await fs.promises.readFile(compressedVideoPath);
+//         fs.unlinkSync(compressedVideoPath);
+//         // console.log("Compressed video size:", buffer.length, "bytes");
+//         const compressedVideoSizeInMB = buffer.length / (1024 * 1024);
+//         console.log(
+//           "Compressed video size:",
+//           compressedVideoSizeInMB.toFixed(2),
+//           "MB"
+//         );
+//       } catch (compressionError) {
+//         console.error("Error during video compression:", compressionError);
+//         return res.status(500).json({
+//           success: false,
+//           message: "Error during video compression.",
+//           data: compressionError,
+//         });
+//       }
+//     } else {
+//       buffer = await sharp(req?.file?.buffer)
+//         .resize({ height: 1920, width: 1080, fit: "contain" })
+//         .toBuffer();
+//       console.log("ImageData", buffer);
+//     }
+
+//     // const imageName = randomImageName();
+
+//     const params = {
+//       Bucket: BUCKET_NAME,
+//       Key: imageName,
+//       Body: buffer,
+//       ContentType: req?.file?.mimetype,
+//     };
+
+//     const rr = new PutObjectCommand(params);
+
+//     const ans = await s3.send(rr);
+
+//     const data = {
+//       caption,
+//       userId: userId,
+//       url: imageName,
+//       type: isVideo ? "reel" : "image",
+//       location: location,
+//       description: description,
+//       likes: [],
+//       comment: [],
+//     };
+
+//     const addPost = await postSchemaModel.create(data);
+
+//     if (isVideo) {
+//       console.log(`Uploaded video size: ${buffer.length} bytes`);
+//     }
+
+//     if (addPost) {
+//       let updatePostCount = await userDetails.updateOne({
+//         $inc: { postCount: 1 },
+//       });
+//       return res.status(200).json({
+//         success: true,
+//         message: "File uploaded successfully in the database.",
+//         data: data,
+//       });
+//     } else {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "File not saved in the database." });
+//     }
+//   } catch (error) {
+//     console.error("Error:", error);
+//     return res
+//       .status(500)
+//       .json({ success: false, message: "Internal server error.", data: error });
+//   }
+// };
+
+
 exports.upload = async function (req, res) {
   // console.log("Start Time:=", new Date().toLocaleTimeString());
   console.log("req", req?.body);
@@ -44,7 +192,6 @@ exports.upload = async function (req, res) {
   console.log("location", location);
   console.log("description", description);
   console.log("req.body:", req?.file);
-
   try {
     if (!userId) {
       return res
@@ -76,60 +223,10 @@ exports.upload = async function (req, res) {
     console.log("uploadedFile", uploadedFile);
     const isVideo = uploadedFile.mimetype.startsWith("video/");
     console.log("isVideo", isVideo);
-    const videoSizeLimitMB = 2;
-    let buffer;
-    const imageName = randomImageName();
 
     if (isVideo) {
-      const videoSizeInBytes = req?.file?.size;
-      console.log(videoSizeInBytes);
-
-      const compressedVideoPath = `${imageName}_compressed.mp4`;
-      console.log("compressedVideoPath", compressedVideoPath);
-      try {
-        await new Promise((resolve, reject) => {
-          const inputBuffer = req?.file?.buffer;
-          const inputStream = new stream.PassThrough();
-          inputStream.end(inputBuffer);
-
-          ffmpeg()
-            .input(inputStream)
-            .inputFormat("mp4")
-            .videoCodec("libx264")
-            .audioCodec("aac")
-            .outputOptions([
-              "-preset veryfast",
-              // "-b:v 500K",
-                '-b:v 1M',
-              // '-crf 23',
-            ])
-            .on("end", () => {
-              console.log("Video compression successful.");
-              resolve();
-            })
-            .on("error", (err) => {
-              console.error("Error during video compression:", err);
-              reject(err);
-            })
-            .saveToFile(compressedVideoPath);
-        });
-        buffer = await fs.promises.readFile(compressedVideoPath);
-        fs.unlinkSync(compressedVideoPath);
-        // console.log("Compressed video size:", buffer.length, "bytes");
-        const compressedVideoSizeInMB = buffer.length / (1024 * 1024);
-        console.log(
-          "Compressed video size:",
-          compressedVideoSizeInMB.toFixed(2),
-          "MB"
-        );
-      } catch (compressionError) {
-        console.error("Error during video compression:", compressionError);
-        return res.status(500).json({
-          success: false,
-          message: "Error during video compression.",
-          data: compressionError,
-        });
-      }
+      buffer = (req?.file?.buffer);
+      console.log("VideoData", buffer);
     } else {
       buffer = await sharp(req?.file?.buffer)
         .resize({ height: 1920, width: 1080, fit: "contain" })
@@ -137,7 +234,7 @@ exports.upload = async function (req, res) {
       console.log("ImageData", buffer);
     }
 
-    // const imageName = randomImageName();
+    const imageName = randomImageName();
 
     const params = {
       Bucket: BUCKET_NAME,
@@ -163,10 +260,6 @@ exports.upload = async function (req, res) {
 
     const addPost = await postSchemaModel.create(data);
 
-    if (isVideo) {
-      console.log(`Uploaded video size: ${buffer.length} bytes`);
-    }
-
     if (addPost) {
       let updatePostCount = await userDetails.updateOne({
         $inc: { postCount: 1 },
@@ -188,6 +281,8 @@ exports.upload = async function (req, res) {
       .json({ success: false, message: "Internal server error.", data: error });
   }
 };
+
+
 
 exports.postDelete = async function (req, res) {
   const { postId, userId } = req?.params;
@@ -612,7 +707,7 @@ exports.likeReel = async function (req, res) {
       return res.status(400).json({ sucess: false, message: "userId require" });
     }
     if (!reelId) {
-      return res.status(400).json({ sucess: false, message: "postId require" });
+      return res.status(400).json({ sucess: false, message: "reelId require" });
     }
     const reel = await postSchemaModel.findOne({ _id: reelId });
     console.log("reel",reel);
@@ -629,8 +724,8 @@ exports.likeReel = async function (req, res) {
 
         let notificationObj = {
           userId: reelUserId,
-          postId: reelId,
-          comment: `${getUserDetails?.fullName} like your post`,
+          reelId: reelId,
+          comment: `${getUserDetails?.fullName} like your reel`,
           commentUserId: userId,
           isLike: true,
           fullName: getUserDetails?.fullName,
@@ -662,11 +757,11 @@ exports.likeReel = async function (req, res) {
         } else {
           return res
             .status(400)
-            .json({ success: false, message: "Post has not been disliked" });
+            .json({ success: false, message: "reel has not been disliked" });
         }
       }
     } else {
-      return res.status(400).json({ sucess: false, message: "post not found" });
+      return res.status(400).json({ sucess: false, message: "reel not found" });
     }
   } catch (error) {
     return res

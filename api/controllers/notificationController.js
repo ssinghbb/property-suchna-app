@@ -23,9 +23,7 @@ const s3 = new S3Client({
 
 exports.getNotifications = async function (req, res) {
   const { userId } = req.params || {};
-
   console.log("userId", userId);
-
   if (!userId) {
     return res.status(404).json({ success: false, message: "UserId is required" });
   }
