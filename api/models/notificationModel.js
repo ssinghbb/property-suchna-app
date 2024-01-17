@@ -35,6 +35,9 @@ var NotificationSchema = new Schema({
     type: Boolean,  
     default: false,
   },
+  type: {
+    type: String,
+  },
   notificationDate: {
     type: Date,
     default: Date.now,

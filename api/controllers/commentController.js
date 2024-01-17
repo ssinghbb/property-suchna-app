@@ -55,7 +55,8 @@ exports.addComment = async function (req, res) {
         isComment: true,
         comment: comment,
         postId,
-        fullName: user?.fullName
+        fullName: user?.fullName,
+        type:post.type,
       })
       };
       return res.status(200).json({
@@ -159,7 +160,8 @@ exports.addReelComment = async function (req, res) {
         isComment: true,
         comment: comment,
         reelId,
-        fullName: user?.fullName
+        fullName: user?.fullName,
+        type:reel.type
       })
       };
       return res.status(200).json({
@@ -178,6 +180,7 @@ exports.addReelComment = async function (req, res) {
       .json({ success: false, message: "Server error", error });
   }
 };
+
 
 exports.getReelComments = async (req, res) => {
   const { reelId } = req?.params;
