@@ -473,6 +473,7 @@ exports.getAllPost = async function (req, res) {
     res.status(500).json({ sucess: false, message: "server error", error });
   }
 };
+
 exports.getPostById = async function (req, res) {
   const { postId } = req.params;
   console.log("req.params:", req.params);
@@ -644,6 +645,7 @@ exports.getUserPost = async (req, res) => {
   }
 };
 
+
 exports.reelDelete = async function (req, res) {
   // const userId = req?.params?
   // // console.log(req);
@@ -698,6 +700,48 @@ exports.reelDelete = async function (req, res) {
   }
 };
 
+
+exports.getUserReel = async (req, res) => {
+  // console.log("req",req);
+  const userId = req.params.userId;
+  console.log("userId",userId);
+  try {
+    if (!userId) {
+      return res
+        .status(404)
+        .json({ success: false, message: "userId require" });
+    }
+   
+    const posts = (await postSchemaModel.find({ userId: userId ,type:"reel"})).reverse();
+    console.log("posts",posts);
+    if (!posts || posts.lenght == 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "no posts found for this user" });
+    }
+    for (const post of posts) {
+      const getObjectParams = {
+        Bucket: BUCKET_NAME,
+        Key: post?.url,
+      };
+
+      const expiresInSeconds = 7 * 24 * 60 * 60;
+
+      const command = new GetObjectCommand(getObjectParams);
+      const url = await getSignedUrl(s3, command, {
+        expiresIn: expiresInSeconds,
+      }); //we can also use expires in for security
+      post.url = url;
+    }
+    return res
+      .status(200)
+      .json({ success: true, message: "post retrieved sucessfully", posts });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "server error", error });
+  }
+};
 
 exports.likeReel = async function (req, res) {
   const { userId, reelId, reelUserId } = req?.body;

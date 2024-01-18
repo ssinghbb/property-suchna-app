@@ -272,6 +272,7 @@ exports.profile = function (req, res, next) {
   }
 };
 
+
 exports.updateUser = async function (req, res) {
   const { fullName, phoneNumber, bio, userId } = req?.body;
   
