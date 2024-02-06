@@ -349,3 +349,37 @@ exports.updateUser = async function (req, res) {
       .json({ success: false, message: "Server error", error });
   }
 };
+
+exports.getAllUser= async function (req, res) {
+  const { page = 1, pageSize = 20,search='' } = req.query;
+  const totalUsers = await userSchemaModel.countDocuments();
+    console.log("totalUsers:", totalUsers)
+    const totalPages = Math.ceil(totalUsers / pageSize);
+    console.log("totalPages:", totalPages)
+    const query = {
+      $or: [
+        { fullName: { $regex: new RegExp(search, 'i') } },
+        { phoneNumber: { $regex: new RegExp(search, 'i') } },
+      ],
+    };
+
+  try {
+
+    const users = await userSchemaModel
+      .find(query)
+      .skip((page - 1) * pageSize)
+      .limit(Number(pageSize)).exec();
+
+    return res.status(200).json({
+      success: true,
+      message: "All users fetched successfully",
+      data: users,
+      totalPages: totalPages
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error", error });
+  }
+};
+
