@@ -1,7 +1,7 @@
 "use strict";
 const mongoose = require("mongoose");
 const userSchemaModel = require("./userModel");
-const { ObjectId } = mongoose.Schema.Types;
+const { ObjectId } = mongoose.Schema.Types; //ObjectId is a type used for representing MongoDB document IDs.
 const Schema = mongoose.Schema;
 var postSchema = new Schema({
   caption: {

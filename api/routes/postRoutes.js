@@ -17,5 +17,5 @@ module.exports = function (app) {
   app.route("/post/:postId").get(postController.getPostById);
   app.route("/reel/like").put(postController.likeReel);
   app.route("/post/userreel/:userId").get(postController.getUserReel);
-
+  
 };
