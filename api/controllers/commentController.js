@@ -11,6 +11,7 @@ const { release } = require("process");
 
     
 exports.addComment = async function (req, res) {
+  console.log("req",req?.body);
   const { postId, userId, comment } = req.body;
   try {
     if (!postId) {

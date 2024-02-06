@@ -86,9 +86,16 @@ exports.register = async function (req, res) {
 };
 
 //Verify the user mobile number via OTP
-exports.verify = function (req, res) {
+exports.verify =async function (req, res) {
   const phoneNumber = req.body.phoneNumber;
   const code = req.body.code;
+  try{
+    const existingUser = await userSchemaModel.findOne({
+      phoneNumber: req.body.phoneNumber,
+    });
+  }catch{
+
+  }
 
   // Check if the OTP is not exactly 6 digits
   if (code.length !== 6) {
@@ -195,7 +202,8 @@ exports.testapi = function (req, res) {
   return res.status(200).json({ message: "Server is running...." });
 };
 
-exports.sign_in = async function (req, res) {
+exports.sign_in = async function (req, res) { 
+  console.log("reqqqqq login" ,req?.body);
   const { phoneNumber, password } = req.body;
   if (!phoneNumber) {
     return res
