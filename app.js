@@ -33,11 +33,11 @@ app.use(cors());
 app.use(function (req, res, next) {
   // console.log(" Bearertoken",req.headers.authorization.split(" ")[0]);
   // console.log(" maintoken",req.headers.authorization.split(" ")[1]);
-  // if (req.url === '/register' || req.originalUrl === '/signin') {
-  //   next(); 
-  // } 
-  //  else if (
-   if (
+  if (req.originalUrl === '/auth/register' || req.originalUrl === '/auth/verify' || req.originalUrl === '/auth/sign_in' || req.originalUrl === '/testapi') {
+    next(); 
+  } 
+   else if (
+  //  if (
     req.headers &&
     req.headers.authorization &&
     req.headers.authorization.split(" ")[0] === "Bearer"
