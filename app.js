@@ -31,9 +31,10 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cors());
 app.use(function (req, res, next) {
+  console.log("req:", req.originalUrl)
   // console.log(" Bearertoken",req.headers.authorization.split(" ")[0]);
   // console.log(" maintoken",req.headers.authorization.split(" ")[1]);
-  if (req.originalUrl === '/auth/register' || req.originalUrl === '/auth/verify' || req.originalUrl === '/auth/sign_in' || req.originalUrl === '/testapi') {
+  if (req.originalUrl === '/auth/register' || req.originalUrl === '/auth/verify' || req.originalUrl === '/auth/sign_in' || req.originalUrl === '/testApi') {
     next(); 
   } 
    else if (
