@@ -7,6 +7,8 @@ const fs = require("fs");
 var UserSchema = require("../models/userModel");
 var postSchemaModel = require("../models/postModel");
 var notificationSchemaModel = require("../models/notificationModel");
+const { equal } = require("assert");
+
 const {
   S3Client,
   PutObjectCommand,
@@ -183,7 +185,6 @@ const s3 = new S3Client({
 //   }
 // };
 
-
 exports.upload = async function (req, res) {
   // console.log("Start Time:=", new Date().toLocaleTimeString());
   console.log("req", req?.body);
@@ -200,14 +201,14 @@ exports.upload = async function (req, res) {
     }
 
     const userDetails = await UserSchema.findOne({ _id: userId });
-    console.log("userDetails:new change", userDetails)
+    console.log("userDetails:new change", userDetails);
 
     if (!userDetails) {
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
     }
-    if(userDetails.postCount > 10) {
+    if (userDetails.postCount > 10) {
       return res
         .status(401)
         .json({ success: false, message: "Only 10 post you can upload" });
@@ -225,7 +226,7 @@ exports.upload = async function (req, res) {
     console.log("isVideo", isVideo);
 
     if (isVideo) {
-      buffer = (req?.file?.buffer);
+      buffer = req?.file?.buffer;
       console.log("VideoData", buffer);
     } else {
       buffer = await sharp(req?.file?.buffer)
@@ -282,8 +283,6 @@ exports.upload = async function (req, res) {
   }
 };
 
-
-
 exports.postDelete = async function (req, res) {
   const { postId, userId } = req?.params;
   try {
@@ -330,8 +329,10 @@ exports.postDelete = async function (req, res) {
   }
 };
 
+
 exports.likePost = async function (req, res) {
   const { userId, postId, postUserId } = req.body;
+  console.log("userId,postId,postUserId", userId, postId, postUserId);
   try {
     if (!userId) {
       return res.status(400).json({ sucess: false, message: "userId require" });
@@ -340,34 +341,54 @@ exports.likePost = async function (req, res) {
       return res.status(400).json({ sucess: false, message: "postId require" });
     }
     const post = await postSchemaModel.findOne({ _id: postId });
+    console.log("post", post);
     if (post) {
       const isLike = post?.likes?.includes(userId);
       console.log("isLike", isLike);
-
+      // its returns true /false  for like
       if (!isLike) {
         const like = post?.likes;
         like.push(userId);
         post.likes = like;
         const result = await postSchemaModel.updateOne({ _id: postId }, post);
+        console.log("resultttttt", result);
         const getUserDetails = await userSchemaModel.findById(userId);
+        // console.log("post userId 0000",post)
+        console.log("post userId 0000", post?.userId.toString());
+        console.log("userId userId 0000", userId);
 
-        let notificationObj = {
-          userId: postUserId,
-          postId: postId,
-          comment: `${getUserDetails?.fullName} like your post`,
-          commentUserId: userId,
-          isLike: true,
-          fullName: getUserDetails?.fullName,
-        };
-        const notification = await notificationSchemaModel.create(
-          notificationObj
-        );
+        let _iddd = post?.userId.toString();
+        console.log("_iddd", _iddd);
+        console.log("!_iddd == userId", !_iddd == userId);
+        // console.log("_iddd == userId", _iddd == userId);
 
-        console.log("notification:", notification);
-        return res
-          .status(200)
-          .json({ sucess: true, message: "like succesfully", post });
+        // for post user
+        if (_iddd !== userId) {
+          let notificationObj = {
+            userId: postUserId,
+            postId: postId,
+            comment: `${getUserDetails?.fullName} like your post`,
+            islikeUserId: userId,
+            isLike: true,
+            fullName: getUserDetails?.fullName,
+          };
+          const notification = await notificationSchemaModel.create(
+            notificationObj
+          );
+          console.log("notification:", notification);
+          return res
+            .status(200)
+            .json({ sucess: true, message: "like succesfully", post });
+        } else {
+          // for other usr
+          console.log("wwwww");
+          return res
+            .status(200)
+            .json({ sucess: true, message: "like succesfully", post });
+        }
       } else {
+        // for dislike
+
         const indexOfDislike = post.likes.indexOf(userId);
 
         if (indexOfDislike !== -1) {
@@ -396,6 +417,8 @@ exports.likePost = async function (req, res) {
       .json({ sucess: false, message: "sever error", error });
   }
 };
+
+
 
 exports.getPostLikes = async function (req, res) {
   const _id = req?.params?._id;
@@ -427,7 +450,7 @@ exports.getPostLikes = async function (req, res) {
 };
 
 exports.getAllPost = async function (req, res) {
-  console.log("getAllPost")
+  console.log("getAllPost");
   const { page = 1, limit = 10 } = req.query;
   try {
     const startIndex = (page - 1) * limit;
@@ -645,7 +668,6 @@ exports.getUserPost = async (req, res) => {
   }
 };
 
-
 exports.reelDelete = async function (req, res) {
   // const userId = req?.params?
   // // console.log(req);
@@ -700,20 +722,21 @@ exports.reelDelete = async function (req, res) {
   }
 };
 
-
 exports.getUserReel = async (req, res) => {
   // console.log("req",req);
   const userId = req.params.userId;
-  console.log("userId",userId);
+  console.log("userId", userId);
   try {
     if (!userId) {
       return res
         .status(404)
         .json({ success: false, message: "userId require" });
     }
-   
-    const posts = (await postSchemaModel.find({ userId: userId ,type:"reel"})).reverse();
-    console.log("posts",posts);
+
+    const posts = (
+      await postSchemaModel.find({ userId: userId, type: "reel" })
+    ).reverse();
+    console.log("posts", posts);
     if (!posts || posts.lenght == 0) {
       return res
         .status(404)
@@ -745,7 +768,7 @@ exports.getUserReel = async (req, res) => {
 
 exports.likeReel = async function (req, res) {
   const { userId, reelId, reelUserId } = req?.body;
-  console.log("userId,reelId,reelUserId",userId,reelId,reelUserId);
+  console.log("userId,reelId,reelUserId", userId, reelId, reelUserId);
   try {
     if (!userId) {
       return res.status(400).json({ sucess: false, message: "userId require" });
@@ -754,7 +777,7 @@ exports.likeReel = async function (req, res) {
       return res.status(400).json({ sucess: false, message: "reelId require" });
     }
     const reel = await postSchemaModel.findOne({ _id: reelId });
-    console.log("reel",reel);
+    console.log("reel", reel);
     if (reel) {
       const isLike = reel?.likes?.includes(userId);
       console.log("isLikebefor", isLike);
@@ -765,31 +788,45 @@ exports.likeReel = async function (req, res) {
         reel.likes = like;
         const result = await postSchemaModel.updateOne({ _id: reelId }, reel);
         const getUserDetails = await userSchemaModel.findById(userId);
-
-        let notificationObj = {
-          userId: reelUserId,
-          reelId: reelId,
-          comment: `${getUserDetails?.fullName} like your reel`,
-          commentUserId: userId,
-          isLike: true,
-          fullName: getUserDetails?.fullName,
-        };
-        const notification = await notificationSchemaModel.create(
-          notificationObj
+        console.log("reel?.userId", reel?.userId.toString());
+        console.log("userId", userId);
+        console.log(
+          "!reel?.userId.equals().userId",
+          !reel?.userId.equals().userId
         );
-
-        console.log("notification:", notification);
-        return res
-          .status(200)
-          .json({ sucess: true, message: "like succesfully", reel });
+        var reel_UserId = reel?.userId.toString();
+        console.log("reel_UserId", reel_UserId);
+        console.log("userId", userId);
+        if (reel_UserId !== userId) {
+          let notificationObj = {
+            userId: reelUserId,
+            reelId: reelId,
+            comment: `${getUserDetails?.fullName} like your reel`,
+            islikeUserId: userId,
+            isLike: true,
+            fullName: getUserDetails?.fullName,
+          };
+          const notification = await notificationSchemaModel.create(
+            notificationObj
+          );
+          console.log("notification:", notification);
+          return res
+            .status(200)
+            .json({ sucess: true, message: "like succesfully", reel });
+        } else {
+          console.log("like succesfully.....");
+          return res
+            .status(200)
+            .json({ sucess: true, message: "like succesfully", reel });
+        }
       } else {
         const indexOfDislike = reel?.likes.indexOf(userId);
-        console.log("indexOfDislike",indexOfDislike);
+        console.log("indexOfDislike", indexOfDislike);
 
         if (indexOfDislike !== -1) {
           reel.likes.splice(indexOfDislike, 1);
           const result = await postSchemaModel.updateOne({ _id: reelId }, reel);
-          console.log("result",result);
+          console.log("result", result);
           const notification = await notificationSchemaModel.findOneAndDelete({
             commentUserId: userId,
             reelId: reelId,
@@ -813,4 +850,3 @@ exports.likeReel = async function (req, res) {
       .json({ sucess: false, message: "sever error", error });
   }
 };
-

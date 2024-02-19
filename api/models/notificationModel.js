@@ -18,7 +18,7 @@ var NotificationSchema = new Schema({
   reelId: {
     type: ObjectId,
   },
-  commentUserId: {
+  islikeUserId: {
     type: ObjectId,
   },
   comment: {

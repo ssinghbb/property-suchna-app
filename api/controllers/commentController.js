@@ -46,6 +46,7 @@ exports.addComment = async function (req, res) {
       like: [],
     });
 
+    console.log("resultcomment",result);
     const user = await userSchemaModel.findById(userId);
     
     if (result) {

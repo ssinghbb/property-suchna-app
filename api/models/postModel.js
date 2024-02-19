@@ -18,20 +18,7 @@ var postSchema = new Schema({
       type: ObjectId,
     },
   ],
-  comment: [
-    {
-      userId: {
-        type: ObjectId,
-        required: true,
-      },
-      // userName: {
-      //   type: String,
-      // },
-      comment: {
-        type: String,
-      },
-    },
-  ],
+  
   user: {
     type: Object,
   },
