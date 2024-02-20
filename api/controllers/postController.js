@@ -366,11 +366,12 @@ exports.likePost = async function (req, res) {
         if (_iddd !== userId) {
           let notificationObj = {
             userId: postUserId,
-            postId: postId,
+            postId: postId, 
             comment: `${getUserDetails?.fullName} like your post`,
-            islikeUserId: userId,
+            islikecommentUserId: userId,
             isLike: true,
             fullName: getUserDetails?.fullName,
+            type:post?.type
           };
           const notification = await notificationSchemaModel.create(
             notificationObj
@@ -802,9 +803,10 @@ exports.likeReel = async function (req, res) {
             userId: reelUserId,
             reelId: reelId,
             comment: `${getUserDetails?.fullName} like your reel`,
-            islikeUserId: userId,
+            islikecommentUserId: userId,
             isLike: true,
             fullName: getUserDetails?.fullName,
+            type:reel?.type
           };
           const notification = await notificationSchemaModel.create(
             notificationObj

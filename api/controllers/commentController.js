@@ -9,9 +9,8 @@ const { equal } = require("assert");
 const userSchemaModel = require("../models/userModel");
 const { release } = require("process");
 
-    
 exports.addComment = async function (req, res) {
-  console.log("req",req?.body);
+  console.log("req", req?.body);
   const { postId, userId, comment } = req.body;
   try {
     if (!postId) {
@@ -26,6 +25,7 @@ exports.addComment = async function (req, res) {
     }
 
     const post = await postSchemaModel.findById(postId);
+    console.log("post", post);
 
     if (!post) {
       return res
@@ -38,7 +38,7 @@ exports.addComment = async function (req, res) {
         .status(400)
         .json({ success: false, message: "comment required" });
     }
-    
+
     const result = await commentSchemaModel.create({
       postId,
       userId,
@@ -46,21 +46,24 @@ exports.addComment = async function (req, res) {
       like: [],
     });
 
-    console.log("resultcomment",result);
+    console.log("resultcomment", result);
     const user = await userSchemaModel.findById(userId);
-    
+    console.log("userrrrrrr", user);
     if (result) {
-      if(!post?.userId.equals(userId)){
-      const response = await notificationSchemaModel.create({
-        userId: post?.userId,
-        commentUserId: userId,
-        isComment: true,
-        comment: comment,
-        postId,
-        fullName: user?.fullName,
-        type:post.type,
-      })
-      };
+      console.log("!post?.userId.equals(userId)", !post?.userId.equals(userId));
+      if (!post?.userId.equals(userId)) {
+        const notification = await notificationSchemaModel.create({
+          userId: post?.userId,
+          islikecommentUserId: userId,
+          isComment: true,
+          comment: comment,
+          postId,
+          fullName: user?.fullName,
+          type: post.type,
+        });
+        console.log("notification", notification);
+      }
+      // console.log("comment add sussfully...");
       return res.status(200).json({
         success: true,
         message: "Comment added  successfully",
@@ -78,8 +81,6 @@ exports.addComment = async function (req, res) {
   }
 };
 
-
-
 exports.getComments = async (req, res) => {
   const { postId } = req.params;
   console.log("postId", postId);
@@ -90,7 +91,7 @@ exports.getComments = async (req, res) => {
         .json({ success: false, message: "postId require" });
     }
     const result = (await commentSchemaModel.find({ postId })).reverse();
-    console.log(" get comment result", result);
+    // console.log(" get comment result", result);
 
     if (result) {
       return res.status(200).json({
@@ -110,13 +111,11 @@ exports.getComments = async (req, res) => {
   }
 };
 
-
-
 exports.addReelComment = async function (req, res) {
-  const { userId,reelId, comment } = req?.body;
-  console.log("req",req);
-  console.log("userId,reelId,comment",userId,reelId,comment);
-  
+  const { userId, reelId, comment } = req?.body;
+  // console.log("req", req);
+  console.log("userId,reelId,comment", userId, reelId, comment);
+
   try {
     if (!reelId) {
       return res
@@ -130,7 +129,7 @@ exports.addReelComment = async function (req, res) {
     }
 
     const reel = await postSchemaModel.findById(reelId);
-    console.log("reel",reel);
+    console.log("reel", reel);
 
     if (!reel) {
       return res
@@ -143,29 +142,31 @@ exports.addReelComment = async function (req, res) {
         .status(400)
         .json({ success: false, message: "comment required" });
     }
-    
+
     const result = await commentSchemaModel.create({
       reelId,
       userId,
       comment,
       like: [],
     });
-   console.log("result",result);
+    console.log("result", result);
     const user = await userSchemaModel.findById(userId);
-    console.log("userfind",user);
-    
+    console.log("userfind", user);
+    console.log("reel?.userId", reel?.userId);
+    console.log(userId, "userId");
     if (result) {
-      if(!reel?.userId.equals(userId)){
-      const response = await notificationSchemaModel.create({
-        userId: reel?.userId,
-        commentUserId: userId,
-        isComment: true,
-        comment: comment,
-        reelId,
-        fullName: user?.fullName,
-        type:reel.type
-      })
-      };
+      if (!reel?.userId.equals(userId)) {
+        const notification = await notificationSchemaModel.create({
+          userId: reel?.userId,
+          islikecommentUserId: userId,
+          isComment: true,
+          comment: comment,
+          reelId,
+          fullName: user?.fullName,
+          type: reel.type,
+        });
+        console.log("notification",notification);
+      }
       return res.status(200).json({
         success: true,
         message: "Comment added  successfully",
@@ -183,10 +184,9 @@ exports.addReelComment = async function (req, res) {
   }
 };
 
-
 exports.getReelComments = async (req, res) => {
   const { reelId } = req?.params;
-  console.log("reelId", reelId);
+  // console.log("reelId", reelId);
   try {
     if (!reelId) {
       return res
