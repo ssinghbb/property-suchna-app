@@ -30,41 +30,6 @@ mongoose.connect(mongoURI).then(
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cors());
-<<<<<<< Updated upstream
-//  this is for autorization purposes
-
-// app.use(function (req, res, next) {
-//   console.log("req:", req.originalUrl)
-//   if (req.originalUrl === '/auth/register' || req.originalUrl === '/auth/verify' || req.originalUrl === '/auth/sign_in' || req.originalUrl === '/testApi') {
-//     next();
-//   }
-//   else if (
-//     req.headers &&
-//     req.headers.authorization &&
-//     req.headers.authorization.split(" ")[0] === "Bearer"
-//   ) {
-//     try {
-//       const isValid = jsonwebtoken.verify(
-//         req.headers.authorization.split(" ")[1],
-//         process.env.JWT_SECRET_KEY
-//       );
-//       req.user = isValid.data;
-//       next();
-//     } catch (error) {
-//       console.log("error", error);
-//       res.status(401).json({
-//         message: "Invalid token",
-//         error: error,
-//       });
-//     }
-//   } else {
-//     req.user = undefined;
-//     res.status(401).json({
-//       message: "Unauthorized user",
-//     });
-//   }
-// });
-=======
 app.use(function (req, res, next) {
   // console.log(" Bearertoken",req.headers.authorization.split(" ")[0]);
   // console.log(" maintoken",req.headers.authorization.split(" ")[1]);
@@ -100,7 +65,6 @@ app.use(function (req, res, next) {
   }
   // next();
 });
->>>>>>> Stashed changes
 var userRoutes = require("./api/routes/userRoutes");
 var postRoutes = require("./api/routes/postRoutes");
 var commentRoutes = require("./api/routes/commentRoutes");
