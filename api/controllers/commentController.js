@@ -111,6 +111,70 @@ exports.getComments = async (req, res) => {
   }
 };
 
+
+// exports.getComments = async (req, res) => {
+//   const { postId } = req.params;
+//   console.log("postId", postId);
+//   try {
+//     if (!postId) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "postId require" });
+//     }
+//     // const result = (await commentSchemaModel.find({ postId })).reverse();
+//     // console.log(" get comment result", result);
+//     const result = await commentSchemaModel.aggregate([
+//       {
+//         $match: { postId: new mongoose.Types.ObjectId(postId) },
+//       },
+     
+//       {
+//         $lookup: {
+//           from: "posts",
+//           localField: "postId",
+//           foreignField: "_id",
+//           as: "post",
+//         },
+//       },
+//       {
+//         $unwind: "$post",
+//       },
+//       {
+//         $lookup:{
+//           from:"users",
+//           localField:"userId",
+//           foreignField:"_id",
+//           as:"user"
+//         },
+//       },
+//       {
+//         $unwind: "$user",
+//       },
+//       {
+//         $sort: { commentedDate: -1 },
+//       },
+//     ])
+//      console.log("result",result);
+//     if (result) {
+//       return res.status(200).json({
+//         success: true,
+//         message: "comment get successfully",
+//         data: result,
+//       });
+//     } else {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "post not found" });
+//     }
+//   } catch (error) {
+//     return res
+//       .status(500)
+//       .json({ success: false, message: "server erroe", error });
+//   }
+// };
+
+
+
 exports.addReelComment = async function (req, res) {
   const { userId, reelId, comment } = req?.body;
   // console.log("req", req);
@@ -183,6 +247,7 @@ exports.addReelComment = async function (req, res) {
       .json({ success: false, message: "Server error", error });
   }
 };
+
 
 exports.getReelComments = async (req, res) => {
   const { reelId } = req?.params;

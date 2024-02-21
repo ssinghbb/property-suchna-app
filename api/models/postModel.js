@@ -13,6 +13,10 @@ var postSchema = new Schema({
     trim: true,
     //required:true
   },
+  thumbnailUrl:{
+    type: String,
+    trim: true,
+  },
   likes: [
     {
       type: ObjectId,

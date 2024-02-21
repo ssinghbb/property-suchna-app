@@ -283,6 +283,106 @@ exports.upload = async function (req, res) {
   }
 };
 
+
+// exports.upload = async function (req, res) {
+//   // console.log("Start Time:=", new Date().toLocaleTimeString());
+//   console.log("req", req?.body);
+//   const { userId, caption = "", userName, location, description } = req?.body;
+//   console.log("userId", userId);
+//   console.log("location", location);
+//   console.log("description", description);
+//   console.log("req.body:", req?.file);
+//   try {
+//     if (!userId) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "userId is required." });
+//     }
+
+//     const userDetails = await UserSchema.findOne({ _id: userId });
+//     console.log("userDetails:new change", userDetails);
+
+//     if (!userDetails) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "User not found" });
+//     }
+//     if (userDetails.postCount > 10) {
+//       return res
+//         .status(401)
+//         .json({ success: false, message: "Only 10 post you can upload" });
+//     }
+
+//     if (!req?.file) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "file is required." });
+//     }
+
+//     const uploadedFile = req?.file;
+//     console.log("uploadedFile", uploadedFile);
+//     const isVideo = uploadedFile.mimetype.startsWith("video/");
+//     console.log("isVideo", isVideo);
+
+//     if (isVideo) {
+//       buffer = req?.file?.buffer;
+//       console.log("VideoData", buffer);
+//     } else {
+//       buffer = await sharp(req?.file?.buffer)
+//         .resize({ height: 1920, width: 1080, fit: "contain" })
+//         .toBuffer();
+//       console.log("ImageData", buffer);
+//     }
+
+//     const imageName = randomImageName();
+
+//     const params = {
+//       Bucket: BUCKET_NAME,
+//       Key: imageName,
+//       Body: buffer,
+//       ContentType: req?.file?.mimetype,
+//     };
+
+//     const rr = new PutObjectCommand(params);
+
+//     const ans = await s3.send(rr);
+
+//     const data = {
+//       caption,
+//       userId: userId,
+//       url: imageName,
+//       type: isVideo ? "reel" : "image",
+//       location: location,
+//       description: description,
+//       likes: [],
+//       comment: [],
+//     };
+
+//     const addPost = await postSchemaModel.create(data);
+
+//     if (addPost) {
+//       let updatePostCount = await userDetails.updateOne({
+//         $inc: { postCount: 1 },
+//       });
+//       return res.status(200).json({
+//         success: true,
+//         message: "File uploaded successfully in the database.",
+//         data: data,
+//       });
+//     } else {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "File not saved in the database." });
+//     }
+//   } catch (error) {
+//     console.error("Error:", error);
+//     return res
+//       .status(500)
+//       .json({ success: false, message: "Internal server error.", data: error });
+//   }
+// };
+
+
 exports.postDelete = async function (req, res) {
   const { postId, userId } = req?.params;
   try {
@@ -329,7 +429,6 @@ exports.postDelete = async function (req, res) {
   }
 };
 
-
 exports.likePost = async function (req, res) {
   const { userId, postId, postUserId } = req.body;
   console.log("userId,postId,postUserId", userId, postId, postUserId);
@@ -366,12 +465,12 @@ exports.likePost = async function (req, res) {
         if (_iddd !== userId) {
           let notificationObj = {
             userId: postUserId,
-            postId: postId, 
+            postId: postId,
             comment: `${getUserDetails?.fullName} like your post`,
             islikecommentUserId: userId,
             isLike: true,
             fullName: getUserDetails?.fullName,
-            type:post?.type
+            type: post?.type,
           };
           const notification = await notificationSchemaModel.create(
             notificationObj
@@ -389,7 +488,6 @@ exports.likePost = async function (req, res) {
         }
       } else {
         // for dislike
-
         const indexOfDislike = post.likes.indexOf(userId);
 
         if (indexOfDislike !== -1) {
@@ -418,8 +516,6 @@ exports.likePost = async function (req, res) {
       .json({ sucess: false, message: "sever error", error });
   }
 };
-
-
 
 exports.getPostLikes = async function (req, res) {
   const _id = req?.params?._id;
@@ -497,6 +593,7 @@ exports.getAllPost = async function (req, res) {
     res.status(500).json({ sucess: false, message: "server error", error });
   }
 };
+
 
 exports.getPostById = async function (req, res) {
   const { postId } = req.params;
@@ -615,6 +712,7 @@ exports.getAllReels = async function (req, res) {
     res.status(500).json({ success: false, message: "Server error", error });
   }
 };
+
 
 exports.getUserPost = async (req, res) => {
   const userId = req.params.userId;
@@ -806,7 +904,7 @@ exports.likeReel = async function (req, res) {
             islikecommentUserId: userId,
             isLike: true,
             fullName: getUserDetails?.fullName,
-            type:reel?.type
+            type: reel?.type,
           };
           const notification = await notificationSchemaModel.create(
             notificationObj

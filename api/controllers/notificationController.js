@@ -79,9 +79,6 @@ exports.getNotifications = async function (req, res) {
         $sort: { notificationDate: -1 },
       },
 
-    
-
-
     ]);
 
     for (const notification of notifications) {
