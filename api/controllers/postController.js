@@ -549,6 +549,9 @@ exports.getPostLikes = async function (req, res) {
 exports.getAllPost = async function (req, res) {
   console.log("getAllPost");
   const { page = 1, limit = 10 } = req.query;
+  const pagereq=req?.query?.page
+  const pagelimit=req?.query?.limit
+  console.log("page,limit",pagereq,pagelimit);
   try {
     const startIndex = (page - 1) * limit;
     const endIndex = page * limit;
@@ -584,6 +587,7 @@ exports.getAllPost = async function (req, res) {
       post.url = url;
     }
     const data = posts.slice(startIndex, endIndex);
+    console.log("data",data);
     res.status(200).json({
       sucess: true,
       message: "post get successfuly",
@@ -593,6 +597,68 @@ exports.getAllPost = async function (req, res) {
     res.status(500).json({ sucess: false, message: "server error", error });
   }
 };
+
+
+
+// exports.getAllPost = async function (req, res) {
+//   console.log("getAllPost");
+//   const { page = 1, limit = 10 } = req.query;
+//   const pagereq = req?.query?.page;
+//   const pagelimit = req?.query?.limit;
+//   console.log("page, limit", pagereq, pagelimit);
+
+//   try {
+//     const pageNumber = parseInt(page);
+//     const limitNumber = parseInt(limit);
+
+//     const startIndex = (pageNumber - 1) * limitNumber;
+
+//     const totalCount = await postSchemaModel.countDocuments({ type: "image" });
+
+//     const posts = await postSchemaModel.aggregate([
+//       { $match: { type: "image" } },
+//       { $skip: startIndex },
+//       { $limit: limitNumber },
+//       {
+//         $lookup: {
+//           from: "users",
+//           localField: "userId",
+//           foreignField: "_id",
+//           as: "userDetails",
+//         },
+//       },
+//       { $unwind: "$userDetails" },
+//     ]);
+
+//     for (const post of posts) {
+//       const getObjectParams = {
+//         Bucket: BUCKET_NAME,
+//         Key: post.url, //imageName
+//       };
+//       const expiresInSeconds = 7 * 24 * 60 * 60;
+//       const command = new GetObjectCommand(getObjectParams);
+//       const url = await getSignedUrl(s3, command, {
+//         expiresIn: expiresInSeconds,
+//       });
+//       post.url = url;
+//     }
+
+//     const data = posts.slice(pageNumber, limitNumber);
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Posts retrieved successfully",
+//       data: data,
+//       totalCount: totalCount,
+//       currentPage: pageNumber,
+//       totalPages: Math.ceil(totalCount / limitNumber),
+//     });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: "Server error", error });
+//   }
+// };
+
+
 
 
 exports.getPostById = async function (req, res) {

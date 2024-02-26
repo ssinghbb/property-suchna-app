@@ -81,23 +81,67 @@ exports.addComment = async function (req, res) {
   }
 };
 
+
+
 exports.getComments = async (req, res) => {
-  const { postId } = req.params;
-  console.log("postId", postId);
+  const { page = 1, limit = 10 } = req.query;
+  const pagereq=req?.query?.page
+  const pagelimit=req?.query?.limit
+  console.log("page,limit",pagereq,pagelimit);
+  const { postId } = req?.params
+  console.log("postIdt",postId);
+  
+
   try {
     if (!postId) {
       return res
         .status(404)
         .json({ success: false, message: "postId require" });
     }
-    const result = (await commentSchemaModel.find({ postId })).reverse();
+    // const result = (await commentSchemaModel.find({ postId })).reverse();
     // console.log(" get comment result", result);
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+
+    const result = await commentSchemaModel.aggregate([
+      {
+        $match: { postId: new mongoose.Types.ObjectId(postId) },
+      },
+      
+      {
+        $lookup: {
+          from: "posts",
+          localField: "postId",
+          foreignField: "_id",
+          as: "post",
+        },
+      },
+      {
+        $unwind: "$post",
+      },
+      {
+        $lookup:{
+          from:"users",
+          localField:"userId",
+          foreignField:"_id",
+          as:"user"
+        },
+      },
+      {
+        $unwind: "$user",
+      },
+      {
+        $sort: { commentedDate: -1 },
+      },
+    ])
+     console.log("result",result);
+    const data1 = result.slice(startIndex, endIndex);
 
     if (result) {
       return res.status(200).json({
         success: true,
         message: "comment get successfully",
-        data: result,
+        data: data1,
       });
     } else {
       return res
@@ -112,66 +156,8 @@ exports.getComments = async (req, res) => {
 };
 
 
-// exports.getComments = async (req, res) => {
-//   const { postId } = req.params;
-//   console.log("postId", postId);
-//   try {
-//     if (!postId) {
-//       return res
-//         .status(404)
-//         .json({ success: false, message: "postId require" });
-//     }
-//     // const result = (await commentSchemaModel.find({ postId })).reverse();
-//     // console.log(" get comment result", result);
-//     const result = await commentSchemaModel.aggregate([
-//       {
-//         $match: { postId: new mongoose.Types.ObjectId(postId) },
-//       },
-     
-//       {
-//         $lookup: {
-//           from: "posts",
-//           localField: "postId",
-//           foreignField: "_id",
-//           as: "post",
-//         },
-//       },
-//       {
-//         $unwind: "$post",
-//       },
-//       {
-//         $lookup:{
-//           from:"users",
-//           localField:"userId",
-//           foreignField:"_id",
-//           as:"user"
-//         },
-//       },
-//       {
-//         $unwind: "$user",
-//       },
-//       {
-//         $sort: { commentedDate: -1 },
-//       },
-//     ])
-//      console.log("result",result);
-//     if (result) {
-//       return res.status(200).json({
-//         success: true,
-//         message: "comment get successfully",
-//         data: result,
-//       });
-//     } else {
-//       return res
-//         .status(404)
-//         .json({ success: false, message: "post not found" });
-//     }
-//   } catch (error) {
-//     return res
-//       .status(500)
-//       .json({ success: false, message: "server erroe", error });
-//   }
-// };
+
+
 
 
 
@@ -249,8 +235,14 @@ exports.addReelComment = async function (req, res) {
 };
 
 
+
 exports.getReelComments = async (req, res) => {
   const { reelId } = req?.params;
+  const { page = 1, limit = 10 } = req.query;
+  const pagereq=req?.query?.page
+  const pagelimit=req?.query?.limit
+  console.log("page,limit",pagereq,pagelimit);
+  console.log("reelId",reelId);
   // console.log("reelId", reelId);
   try {
     if (!reelId) {
@@ -258,13 +250,37 @@ exports.getReelComments = async (req, res) => {
         .status(404)
         .json({ success: false, message: "reelId require" });
     }
-    const result = (await commentSchemaModel.find({ reelId })).reverse();
-    console.log(" get comment result", result);
+
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    // const result = (await commentSchemaModel.find({ reelId })).reverse();
+    // console.log(" get comment result", result);
+    const result = await commentSchemaModel.aggregate([
+      {
+        $match: { reelId: new mongoose.Types.ObjectId(reelId) },
+      },
+      {
+        $lookup:{
+          from:"users",
+          localField:"userId",
+          foreignField:"_id",
+          as:"user"
+        },
+      },
+      {
+        $unwind: "$user",
+      },
+      {
+        $sort: { commentedDate: -1 },
+      },
+    ])
+     console.log("result",result);
+    const data1 = result.slice(startIndex, endIndex);
     if (result) {
       return res.status(200).json({
         success: true,
         message: "comment get successfully",
-        data: result,
+        data: data1,
       });
     } else {
       return res
@@ -274,6 +290,6 @@ exports.getReelComments = async (req, res) => {
   } catch (error) {
     return res
       .status(500)
-      .json({ success: false, message: "server erroe", error });
+      .json({ success: false, message: "server erroe", error:error.massage });
   }
 };
