@@ -211,7 +211,7 @@ exports.upload = async function (req, res) {
     if (userDetails.postCount > 10) {
       return res
         .status(401)
-        .json({ success: false, message: "Only 10 post you can upload" });
+        .json({ success: false, message: "Only 10 post and reel you can upload" });
     }
 
     if (!req?.file) {
